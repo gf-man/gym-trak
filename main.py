@@ -213,7 +213,7 @@ if __name__ == "__main__":
     main_window = curses.newwin(curses.LINES - 2, curses.COLS, 1, 0)
     main_window.box()
 
-    vertical_divide = math.floor(curses.COLS * 0.75)
+    vertical_divide = math.floor(curses.COLS * 0.6667)
 
     display_pad_pos = 0
     display_pad = curses.newpad(4096, 256)
