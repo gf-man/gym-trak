@@ -44,11 +44,11 @@ def generate_exercise_dict():
     return ex_dict
     
 
-def input_record(record_exercise):
+def input_record(ex_name):
     #print("Add a Record")
     
     for ex in exercise_list:
-        if record_exercise == ex.name:
+        if ex_name == ex.name:
             if ex.category == Exercise_Type["Resistance"]:
                 weight = get_input("Weight(kilograms): ", 4)
                 reps = get_input("Reps: ", 2)
@@ -77,12 +77,13 @@ def view_todays_records():
     for ex in exercise_list:
         if get_date() in ex.record:
             todays_records_list.append(ex.name + " " + "x".join(ex.record[get_date()]))
+    return todays_records_list
 
-def view_exercise_records():
-    ex_name = get_input("Exercise name: ", MAX_EX_NAME_LENGTH)
+def view_exercise_records(ex_name):
     ex_records_list = []
     for ex in exercise_list:
          if ex_name == ex.name:
+            ex_records_list.append(ex_name)
             for record in ex.record:
                 ex_records_list.append(str(record + " " + "x".join(ex.record[record])))
     return ex_records_list
@@ -171,7 +172,8 @@ def get_input(prompt, max_length):
     stdscr.addstr(curses.LINES - 1, 1, prompt)
     stdscr.refresh()
     string_input = stdscr.getstr(curses.LINES - 1, len(prompt) + 1, max_length)
-    stdscr.addstr(curses.LINES -1, 1, str(" " * (len(prompt) + max_length + 1)))
+    stdscr.addstr(curses.LINES -1, 1, str("  " * (len(prompt) + max_length + 1)))
+    curses.noecho()
     return string_input.decode("utf-8")
 
 def update_display(display_list):
@@ -187,7 +189,7 @@ def update_options(option_dict, selected):
         option_window.addstr(option_number * 2, 0, key, curses.A_REVERSE)
         option_window.addstr(option_number * 2, 2, option_dict[key])
         if option_number == selected:
-            option_window.chgat(option_number *2, 0, -1, curses.A_REVERSE)
+            option_window.chgat(option_number * 2, 0, -1, curses.A_REVERSE)
         option_number += 1
 
 def draw_windows():
@@ -217,8 +219,7 @@ if __name__ == "__main__":
     display_pad = curses.newpad(4096, 256)
     display_window = display_pad.subpad(0, 0)
 
-    option_menus = ["main", "exercises"]
-    option_menu = option_menus[0]
+    option_menu = "main"
     option_dict = MAIN_OPTION_DICT
     option_selector = 0
     option_window = main_window.subwin(curses.LINES - 4, curses.COLS - vertical_divide - 2, 2, vertical_divide + 1)
@@ -249,27 +250,34 @@ if __name__ == "__main__":
         elif option == "\n":
             option = list(option_dict)[option_selector]
 
-
         if option_menu == "main":
             if option.lower() == "n":
                 input_exercise()
             elif option.lower() == "r":
                 option_dict = generate_exercise_dict()
-                option_menu = option_menus[1]
-                #input_record()
+                option_menu = "exercises-record"
             elif option.lower() == "v":
                 update_display(view_todays_records())
             elif option.lower() == "a":
                 update_display(view_all_records())
             elif option.lower() == "e":
-                update_display(view_exercise_records())
+                option_dict = generate_exercise_dict()
+                option_menu = "exercises-view"
             elif option.lower() == "s":
                 save_records()
             elif option.lower() == "q":
                 break
-        elif option_menu == "exercises":
+        elif option_menu == "exercises-record":
             if option in option_dict:
                 input_record(option_dict[option])
+                option_menu = "main"
+            elif option == "KEY_HOME":
+                option_menu = "main"
+        elif option_menu == "exercises-view":
+            if option in option_dict:
+                update_display(view_exercise_records(option_dict[option]))
+                option_menu = "main"
+            elif option == "KEY_HOME":
                 option_menu = "main"
 
 
