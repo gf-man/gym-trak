@@ -172,7 +172,7 @@ def get_input(prompt, max_length):
     stdscr.addstr(curses.LINES - 1, 1, prompt)
     stdscr.refresh()
     string_input = stdscr.getstr(curses.LINES - 1, len(prompt) + 1, max_length)
-    stdscr.addstr(curses.LINES -1, 1, str("  " * (len(prompt) + max_length + 1)))
+    stdscr.addstr(curses.LINES -1, 1, str(" " * (len(prompt) + max_length + 1)))
     curses.noecho()
     return string_input.decode("utf-8")
 
