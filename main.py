@@ -255,6 +255,7 @@ if __name__ == "__main__":
                 input_exercise()
             elif option.lower() == "r":
                 option_dict = generate_exercise_dict()
+                option_selector = 0
                 option_menu = "exercises-record"
             elif option.lower() == "v":
                 update_display(view_todays_records())
@@ -262,6 +263,7 @@ if __name__ == "__main__":
                 update_display(view_all_records())
             elif option.lower() == "e":
                 option_dict = generate_exercise_dict()
+                option_selector = 0
                 option_menu = "exercises-view"
             elif option.lower() == "s":
                 save_records()
@@ -272,12 +274,14 @@ if __name__ == "__main__":
                 input_record(option_dict[option])
                 option_menu = "main"
             elif option == "KEY_HOME":
+                option_selector = 0
                 option_menu = "main"
         elif option_menu == "exercises-view":
             if option in option_dict:
                 update_display(view_exercise_records(option_dict[option]))
                 option_menu = "main"
             elif option == "KEY_HOME":
+                option_selector = 0
                 option_menu = "main"
 
 
