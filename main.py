@@ -39,8 +39,11 @@ def generate_exercise_dict():
     ex_dict = {}
     counter = 1
     for ex in exercise_list:
-        ex_dict.update({str(counter): ex.name})
-        counter += 1
+        if ex.name[0] not in ex_dict:
+            ex_dict.update({ex.name[0].upper(): ex.name})
+        else:
+            ex_dict.update({str(counter): ex.name})
+            counter += 1
     return ex_dict
     
 
@@ -76,7 +79,7 @@ def view_todays_records():
     todays_records_list = []
     for ex in exercise_list:
         if get_date() in ex.record:
-            todays_records_list.append(ex.name + " " + "x".join(ex.record[get_date()]))
+            todays_records_list.append(ex.name + ": " + "x".join(ex.record[get_date()]))
     return todays_records_list
 
 def view_exercise_records(ex_name):
@@ -85,7 +88,7 @@ def view_exercise_records(ex_name):
          if ex_name == ex.name:
             ex_records_list.append(ex_name)
             for record in ex.record:
-                ex_records_list.append(str(record + " " + "x".join(ex.record[record])))
+                ex_records_list.append(str(record + ": " + "x".join(ex.record[record])))
     return ex_records_list
 
 def view_all_records():
@@ -94,7 +97,7 @@ def view_all_records():
         all_records_list.append(rec_date)
         for ex in exercise_list:
             if rec_date in ex.record:
-                all_records_list.append(str(ex.name + ":" + "x".join(ex.record[rec_date])))
+                all_records_list.append(str(ex.name + ": " + "x".join(ex.record[rec_date])))
         all_records_list.append("")
     return all_records_list
 
@@ -172,11 +175,11 @@ def get_input(prompt, max_length):
     stdscr.addstr(curses.LINES - 1, 1, prompt)
     stdscr.refresh()
     string_input = stdscr.getstr(curses.LINES - 1, len(prompt) + 1, max_length)
-    stdscr.addstr(curses.LINES -1, 1, str(" " * (len(prompt) + max_length + 1)))
+    stdscr.addstr(curses.LINES -1, 1, str(" " * (curses.COLS - 2)))
     curses.noecho()
     return string_input.decode("utf-8")
 
-def update_display(display_list):
+def update_display(display_list): # No support for text formatting (colors etc)
     display_pad.erase()
     if display_list:
         for line_number in range(len(display_list)):
@@ -270,15 +273,15 @@ if __name__ == "__main__":
             elif option.lower() == "q":
                 break
         elif option_menu == "exercises-record":
-            if option in option_dict:
-                input_record(option_dict[option])
+            if option.upper() in option_dict:
+                input_record(option_dict[option.upper()])
                 option_menu = "main"
             elif option == "KEY_HOME":
                 option_selector = 0
                 option_menu = "main"
         elif option_menu == "exercises-view":
-            if option in option_dict:
-                update_display(view_exercise_records(option_dict[option]))
+            if option.upper() in option_dict:
+                update_display(view_exercise_records(option_dict[option.upper()]))
                 option_menu = "main"
             elif option == "KEY_HOME":
                 option_selector = 0
