@@ -25,6 +25,68 @@ class Exercise:
     def add_record(self, record):
         self.record.update(record)
 
+def load_records():
+    file = open("gym.md", "r")
+    records_started = False
+    rec_date = "01/01/2000"
+    for line in file:
+        line = line.rstrip('\n')
+        try:
+            datetime.datetime.strptime(line,"%d/%m/%Y")
+            rec_date = line
+            records_started = True
+        except ValueError:
+            if line == "":
+                pass
+            elif line[0] == "-" and records_started:
+                ex_data = line[2:].split(':')
+                ex_name = ex_data[0]
+                ex_rec = ex_data[1].split('>')
+                ex_rec_ind = ex_rec[0].split('x') # ONLY THE FIRST RECORD
+                if ex_rec_ind[0][-2:] == "kg":
+                    # Resistance
+                    ex_cat = 1
+                elif ex_rec_ind[0][-1:] == "s":
+                    # Isometric
+                    ex_cat = 3
+                elif ex_rec_ind[1][-2:] == "km":
+                    # Distance
+                    ex_cat = 4
+                else:
+                    # Bodyweight
+                    ex_cat = 2
+
+                if ex_name not in [ex.name for ex in exercise_list]:
+                    exercise_list.append(Exercise(ex_name, ex_cat))
+
+                ex_recs = []
+                for rec in ex_rec:
+                    ex_recs.append(rec.split('x'))
+
+                for ex in exercise_list:
+                    if ex.name == ex_name:
+                        ex.add_record({rec_date: ex_recs})
+                if rec_date not in date_list:
+                    date_list.append(rec_date)
+
+    file.close()
+
+def save_records():
+    file = open("gym.md", "w")
+    file.write("# Gym Tracker\n\n## Format\nDD/MM/YYYY\n- resistance:WEIGHTkgxREPSxSETS:notes\n- bodyweight:REPSxSETS:notes\n- isometric:TIMEsxSETS:notes\n- distance:TIMEmxDISTANCEkm:notes\n\n\n## Dates\n")
+    for rec_date in date_list:
+        file.write(rec_date + "\n")
+        for ex in exercise_list:
+            if rec_date in ex.record:
+                output_line = "- " + ex.name + ":"
+                for rec_number in range(len(ex.record[rec_date])):
+                    output_line += "x".join(ex.record[rec_date][rec_number])
+                    if rec_number != max(range(len(ex.record[rec_date]))):
+                        output_line += ">"
+                output_line += "\n"
+                file.write(output_line)
+        file.write("\n")
+    file.close()
 
 def input_exercise():
     #print("Add a new Exercise")
@@ -45,32 +107,45 @@ def generate_exercise_dict():
             ex_dict.update({str(counter): ex.name})
             counter += 1
     return ex_dict
-    
+
 
 def input_record(ex_name):
     #print("Add a Record")
-    
+
     for ex in exercise_list:
         if ex_name == ex.name:
+            if get_date() in ex.record:
+                record = ex.record[get_date()]
+            else:
+                record = []
+
             if ex.category == Exercise_Type["Resistance"]:
-                weight = get_input("Weight(kilograms): ", 4)
-                reps = get_input("Reps: ", 2)
-                sets = get_input("Sets: ", 2)
-                ex.add_record({get_date(): [weight + "kg", reps, sets]})
+                while True:
+                    weight = get_input("Weight(kilograms): ", 4)
+                    reps = get_input("Reps: ", 2)
+                    sets = get_input("Sets: ", 2)
+                    notes = get_input("Notes: ", 64)
+                    record.append([weight + "kg", reps, sets])
+                    if not yn_prompt("Add more sets? (y/n)"):
+                        break
             elif ex.category == Exercise_Type["Bodyweight"]:
                 reps = get_input("Reps: ", 2)
                 sets = get_input("Sets: ", 2)
-                ex.add_record({get_date(): [reps, sets]})
+                notes = get_input("Notes: ", 64)
+                record.append([reps, sets, notes])
             elif ex.category == Exercise_Type["Isometric"]:
                 time = get_input("Time(seconds): ", 3)
                 reps = get_input("Sets: ", 2)
-                ex.add_record({get_date(): [time + "s", reps]})
+                notes = get_input("Notes: ", 64)
+                record.append([time + "s", reps])
             elif ex.category == Exercise_Type["Distance"]:
                 time = get_input("Time(minutes): ", 3)
                 dist = get_input("Distance(kilometers): ", 3)
-                ex.add_record({get_date(): [time + "m", dist + "km"]})
+                notes = get_input("Notes: ", 64)
+                record.append([time + "m", dist + "km"])
 
-            
+            ex.add_record({get_date(): record})
+
             if get_date() not in date_list:
                 date_list.append(get_date())
             break
@@ -79,7 +154,9 @@ def view_todays_records():
     todays_records_list = []
     for ex in exercise_list:
         if get_date() in ex.record:
-            todays_records_list.append(ex.name + ": " + "x".join(ex.record[get_date()]))
+            todays_records_list.append(ex.name + ": " + "x".join(ex.record[get_date()][0]))
+            for record in ex.record[get_date()][1:]:
+                todays_records_list.append(" " * len(ex.name + ": ") + "x".join(record))
     return todays_records_list
 
 def view_exercise_records(ex_name):
@@ -87,8 +164,10 @@ def view_exercise_records(ex_name):
     for ex in exercise_list:
          if ex_name == ex.name:
             ex_records_list.append(ex_name)
-            for record in ex.record:
-                ex_records_list.append(str(record + ": " + "x".join(ex.record[record])))
+            for rec_date in ex.record:
+                ex_records_list.append(rec_date + ": " + "x".join(ex.record[rec_date][0]))
+                for record in ex.record[rec_date][1:]:
+                    ex_records_list.append(" " * len(rec_date + ": ") + "x".join(record))
     return ex_records_list
 
 def view_all_records():
@@ -97,63 +176,13 @@ def view_all_records():
         all_records_list.append(rec_date)
         for ex in exercise_list:
             if rec_date in ex.record:
-                all_records_list.append(str(ex.name + ": " + "x".join(ex.record[rec_date])))
+                all_records_list.append(str(ex.name + ": " + "x".join(ex.record[rec_date][0])))
+                for record in ex.record[rec_date][1:]:
+                    all_records_list.append(" " * len(ex.name + ": ") + "x".join(record))
         all_records_list.append("")
     return all_records_list
 
 
-def load_records():
-    file = open("gym.md", "r")
-    records_started = False
-    rec_date = "01/01/2000"
-    for line in file:
-        line = line.rstrip('\n')
-        try:
-            datetime.datetime.strptime(line,"%d/%m/%Y")
-            rec_date = line
-            records_started = True
-        except ValueError:
-            if line == "":
-                pass
-            elif line[0] == "-" and records_started:
-                ex_data = line[2:].split(':')
-                ex_name = ex_data[0]
-                ex_rec = ex_data[1].split('x')
-                if ex_rec[0][-2:] == "kg":
-                    # Resistance
-                    ex_cat = 1
-                elif ex_rec[0][-1:] == "s":
-                    # Isometric
-                    ex_cat = 3
-                elif ex_rec[1][-2:] == "km":
-                    # Distance
-                    ex_cat = 4
-                else:
-                    # Bodyweight
-                    ex_cat = 2
-                if ex_name not in [ex.name for ex in exercise_list]:
-                    exercise_list.append(Exercise(ex_name, ex_cat))
-
-                for ex in exercise_list:
-                    if ex.name == ex_name:
-                        ex.add_record({rec_date: ex_rec})
-                if rec_date not in date_list:
-                    date_list.append(rec_date)
-
-    file.close()
-
-def save_records():
-    file = open("gym.md", "w")
-    file.write("# Gym Tracker\n\n## Format\nDD/MM/YYYY\n- resistance:WEIGHTkgxREPSxSETS:notes\n- bodyweight:REPSxSETS:notes\n- isometric:TIMEsxSETS:notes\n- distance:TIMEmxDISTANCEkm:notes\n\n\n## Dates\n")
-    for rec_date in date_list:
-        file.write(rec_date + "\n")
-        for ex in exercise_list:
-            if rec_date in ex.record:
-                output_line = "- " + ex.name + ":" + "x".join(ex.record[rec_date]) + "\n"
-                file.write(output_line)
-        file.write("\n")
-    file.close()
-    print("Records Saved")
 
 def start_curses():
     curses.noecho()
@@ -170,20 +199,45 @@ def end_curses():
     stdscr.keypad(False)
     curses.endwin()
 
+def show_message(message):
+    clear_message()
+    stdscr.addstr(curses.LINES - 1, 1, message)
+
+def clear_message():
+    stdscr.addstr(curses.LINES -1, 1, str(" " * (curses.COLS - 2)))
+
+def yn_prompt(prompt):
+    show_message(prompt)
+    choice = stdscr.getkey().lower() 
+    while choice not in ["y", "n"]:
+        clear_message()
+        show_message("Press (y)es or (n)o:")
+        choice = stdscr.getkey().lower() 
+    clear_message()
+    if choice == "y":
+        return True
+    else:
+        return False
+
+
 def get_input(prompt, max_length):
+    # i,f,s for intiger, float or string
     curses.echo()
-    stdscr.addstr(curses.LINES - 1, 1, prompt)
+    show_message(prompt)
     stdscr.refresh()
     string_input = stdscr.getstr(curses.LINES - 1, len(prompt) + 1, max_length)
-    stdscr.addstr(curses.LINES -1, 1, str(" " * (curses.COLS - 2)))
+    string_input = string_input.decode("utf-8")
+    clear_message()
     curses.noecho()
-    return string_input.decode("utf-8")
+    return string_input
 
 def update_display(display_list): # No support for text formatting (colors etc)
     display_pad.erase()
     if display_list:
         for line_number in range(len(display_list)):
             display_pad.addstr(line_number, 0, display_list[line_number])
+    global display_pad_pos
+    display_pad_pos = len(display_list) - curses.LINES + 4
 
 def update_options(option_dict, selected):
     option_window.erase()
@@ -257,17 +311,29 @@ if __name__ == "__main__":
             if option.lower() == "n":
                 input_exercise()
             elif option.lower() == "r":
-                option_dict = generate_exercise_dict()
-                option_selector = 0
-                option_menu = "exercises-record"
+                if exercise_list == []:
+                    show_message("No exercises found...")
+                else:
+                    option_dict = generate_exercise_dict()
+                    option_selector = 0
+                    option_menu = "exercises-record"
             elif option.lower() == "v":
-                update_display(view_todays_records())
+                if exercise_list == []:
+                    show_message("No records found...")
+                else:
+                    update_display(view_todays_records())
             elif option.lower() == "a":
-                update_display(view_all_records())
+                if exercise_list == []:
+                    show_message("No records found...")
+                else:
+                    update_display(view_all_records())
             elif option.lower() == "e":
-                option_dict = generate_exercise_dict()
-                option_selector = 0
-                option_menu = "exercises-view"
+                if exercise_list == []:
+                    show_message("No records found...")
+                else:
+                    option_dict = generate_exercise_dict()
+                    option_selector = 0
+                    option_menu = "exercises-view"
             elif option.lower() == "s":
                 save_records()
             elif option.lower() == "q":
