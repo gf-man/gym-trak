@@ -90,12 +90,13 @@ def save_records():
 
 def input_exercise():
     #print("Add a new Exercise")
-    name = get_input("Exercise name: ", MAX_EX_NAME_LENGTH)
+    name = get_input("Exercise name: ", MAX_EX_NAME_LENGTH, "s")
     if name.lower() == "q":
         return
     #print("What type of Exercise? ")
-    category = int(get_input("1: Resistance, 2: Bodyweight, 3: Isometric, 4: Distance: ", 1))
+    category = int(get_input("1: Resistance, 2: Bodyweight, 3: Isometric, 4: Distance: ", 1, "i"))
     exercise_list.append(Exercise(name, category))
+    clear_message()
 
 def generate_exercise_dict():
     ex_dict = {}
@@ -121,27 +122,25 @@ def input_record(ex_name):
 
             if ex.category == Exercise_Type["Resistance"]:
                 while True:
-                    weight = get_input("Weight(kilograms): ", 4)
-                    reps = get_input("Reps: ", 2)
-                    sets = get_input("Sets: ", 2)
-                    notes = get_input("Notes: ", 64)
+                    weight = get_input("Weight(kilograms): ", 4, "f")
+                    reps = get_input("Reps: ", 2, "i")
+                    sets = get_input("Sets: ", 2, "i")
                     record.append([weight + "kg", reps, sets])
                     if not yn_prompt("Add more sets? (y/n)"):
+                        #if yn_prompt("Add notes? (y/n)")
+                        #    notes = get_input("Notes: ", 64)
                         break
             elif ex.category == Exercise_Type["Bodyweight"]:
-                reps = get_input("Reps: ", 2)
-                sets = get_input("Sets: ", 2)
-                notes = get_input("Notes: ", 64)
-                record.append([reps, sets, notes])
+                reps = get_input("Reps: ", 2, "i")
+                sets = get_input("Sets: ", 2, "i")
+                record.append([reps, sets])
             elif ex.category == Exercise_Type["Isometric"]:
-                time = get_input("Time(seconds): ", 3)
-                reps = get_input("Sets: ", 2)
-                notes = get_input("Notes: ", 64)
+                time = get_input("Time(seconds): ", 3, "i")
+                reps = get_input("Sets: ", 2, "i")
                 record.append([time + "s", reps])
             elif ex.category == Exercise_Type["Distance"]:
-                time = get_input("Time(minutes): ", 3)
-                dist = get_input("Distance(kilometers): ", 3)
-                notes = get_input("Notes: ", 64)
+                time = get_input("Time(minutes): ", 3, "f")
+                dist = get_input("Distance(kilometers): ", 3, "f")
                 record.append([time + "m", dist + "km"])
 
             ex.add_record({get_date(): record})
@@ -219,15 +218,34 @@ def yn_prompt(prompt):
     else:
         return False
 
+def is_int(value):
+    try:
+        int(value)
+        return True
+    except ValueError:
+        return False
 
-def get_input(prompt, max_length):
-    # i,f,s for intiger, float or string
+def is_float(value):
+    try:
+        float(value)
+        return True
+    except ValueError:
+        return False
+
+def get_input(prompt, max_length, input_type):
     curses.echo()
-    show_message(prompt)
-    stdscr.refresh()
-    string_input = stdscr.getstr(curses.LINES - 1, len(prompt) + 1, max_length)
-    string_input = string_input.decode("utf-8")
-    clear_message()
+    while True:
+        show_message(prompt)
+        stdscr.refresh()
+        string_input = stdscr.getstr(curses.LINES - 1, len(prompt) + 1, max_length)
+        string_input = string_input.decode("utf-8")
+        if input_type == "i" and is_int(string_input):
+            break
+        if input_type == "f" and is_float(string_input):
+            break
+        if input_type == "s" and len(string_input) > 0:
+            break
+        clear_message()
     curses.noecho()
     return string_input
 
