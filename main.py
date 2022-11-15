@@ -290,6 +290,9 @@ if __name__ == "__main__":
 
     vertical_divide = math.floor(curses.COLS * 0.6667)
 
+    focus_areas = ["display", "options"]
+    focus = 1
+
     display_pad_pos = 0
     display_pad = curses.newpad(4096, 256)
     display_window = display_pad.subpad(0, 0)
@@ -301,75 +304,82 @@ if __name__ == "__main__":
 
     load_records()
     while True:
-        #stdscr.addstr(curses.LINES - 1, 0, "N: New Exercise, R: Add Record, V: View Today's Record, A: View All Records, E: View Exercise Records, S: Save Records , Q: Quit")
         if option_menu == "main":
             option_dict = MAIN_OPTION_DICT
         update_options(option_dict, option_selector)
         draw_windows()
         option = stdscr.getkey()
 
-        if option.lower() == "k" and display_pad_pos > 0:
-            display_pad_pos -= 1
-        elif option.lower() == "j":
-            display_pad_pos += 1
+        if focus_areas[focus] == "display":
+            if option == "KEY_UP" and display_pad_pos > 0:
+                display_pad_pos -= 1
+            elif option == "KEY_DOWN":
+                display_pad_pos += 1
+            elif option == "\t":
+                focus += 1
+                if focus > len(focus_areas) - 1:
+                    focus -= len(focus_areas)
+        elif focus_areas[focus] == "options":
+            if option == "KEY_UP":
+                option_selector -= 1
+                if option_selector < 0:
+                    option_selector += len(option_dict)
+            elif option == "KEY_DOWN":
+                option_selector += 1
+                if option_selector >= len(option_dict):
+                    option_selector -= len(option_dict)
+            elif option == "\n":
+                option = list(option_dict)[option_selector]
+            elif option == "\t":
+                focus += 1
+                if focus > len(focus_areas) - 1:
+                    focus -= len(focus_areas)
 
-
-        if option == "KEY_UP":
-            option_selector -= 1
-            if option_selector < 0:
-                option_selector += len(option_dict)
-        elif option == "KEY_DOWN":
-            option_selector += 1
-            if option_selector >= len(option_dict):
-                option_selector -= len(option_dict)
-        elif option == "\n":
-            option = list(option_dict)[option_selector]
-
-        if option_menu == "main":
-            if option.lower() == "n":
-                input_exercise()
-            elif option.lower() == "r":
-                if exercise_list == []:
-                    show_message("No exercises found...")
-                else:
-                    option_dict = generate_exercise_dict()
+            if option_menu == "main":
+                if option.lower() == "n":
+                    input_exercise()
+                elif option.lower() == "r":
+                    if exercise_list == []:
+                        show_message("No exercises found...")
+                    else:
+                        option_dict = generate_exercise_dict()
+                        option_selector = 0
+                        option_menu = "exercises-record"
+                elif option.lower() == "v":
+                    if exercise_list == []:
+                        show_message("No records found...")
+                    else:
+                        update_display(view_todays_records())
+                elif option.lower() == "a":
+                    if exercise_list == []:
+                        show_message("No records found...")
+                    else:
+                        update_display(view_all_records())
+                elif option.lower() == "e":
+                    if exercise_list == []:
+                        show_message("No records found...")
+                    else:
+                        option_dict = generate_exercise_dict()
+                        option_selector = 0
+                        option_menu = "exercises-view"
+                elif option.lower() == "s":
+                    save_records()
+                elif option.lower() == "q":
+                    break
+            elif option_menu == "exercises-record":
+                if option.upper() in option_dict:
+                    input_record(option_dict[option.upper()])
+                    option_menu = "main"
+                elif option == "KEY_HOME":
                     option_selector = 0
-                    option_menu = "exercises-record"
-            elif option.lower() == "v":
-                if exercise_list == []:
-                    show_message("No records found...")
-                else:
-                    update_display(view_todays_records())
-            elif option.lower() == "a":
-                if exercise_list == []:
-                    show_message("No records found...")
-                else:
-                    update_display(view_all_records())
-            elif option.lower() == "e":
-                if exercise_list == []:
-                    show_message("No records found...")
-                else:
-                    option_dict = generate_exercise_dict()
+                    option_menu = "main"
+            elif option_menu == "exercises-view":
+                if option.upper() in option_dict:
+                    update_display(view_exercise_records(option_dict[option.upper()]))
+                    option_menu = "main"
+                elif option == "KEY_HOME":
                     option_selector = 0
-                    option_menu = "exercises-view"
-            elif option.lower() == "s":
-                save_records()
-            elif option.lower() == "q":
-                break
-        elif option_menu == "exercises-record":
-            if option.upper() in option_dict:
-                input_record(option_dict[option.upper()])
-                option_menu = "main"
-            elif option == "KEY_HOME":
-                option_selector = 0
-                option_menu = "main"
-        elif option_menu == "exercises-view":
-            if option.upper() in option_dict:
-                update_display(view_exercise_records(option_dict[option.upper()]))
-                option_menu = "main"
-            elif option == "KEY_HOME":
-                option_selector = 0
-                option_menu = "main"
+                    option_menu = "main"
 
 
 
