@@ -139,36 +139,54 @@ def input_record(ex_name):
                         #if yn_prompt("Add notes? (y/n)")
                         #    notes = get_input("Notes: ", 64)
                         break
+
             elif ex.category == Exercise_Type["Bodyweight"]:
-                reps = get_input("Reps: ", 2, "i")
-                if reps is False:
-                    clear_message()
-                    return
-                sets = get_input("Sets: ", 2, "i")
-                if sets is False:
-                    clear_message()
-                    return
-                record.append([reps, sets])
+                while True:
+                    reps = get_input("Reps: ", 2, "i")
+                    if reps is False:
+                        clear_message()
+                        return
+                    sets = get_input("Sets: ", 2, "i")
+                    if sets is False:
+                        clear_message()
+                        return
+                    record.append([reps, sets])
+                    if not yn_prompt("Add more sets? (y/n)"):
+                        #if yn_prompt("Add notes? (y/n)")
+                        #    notes = get_input("Notes: ", 64)
+                        break
+
             elif ex.category == Exercise_Type["Isometric"]:
-                time = get_input("Time(seconds): ", 3, "i")
-                if time is False:
-                    clear_message()
-                    return
-                reps = get_input("Sets: ", 2, "i")
-                if reps is False:
-                    clear_message()
-                    return
-                record.append([time + "s", reps])
+                while True:
+                    time = get_input("Time(seconds): ", 3, "i")
+                    if time is False:
+                        clear_message()
+                        return
+                    reps = get_input("Sets: ", 2, "i")
+                    if reps is False:
+                        clear_message()
+                        return
+                    record.append([time + "s", reps])
+                    if not yn_prompt("Add more sets? (y/n)"):
+                        #if yn_prompt("Add notes? (y/n)")
+                        #    notes = get_input("Notes: ", 64)
+                        break
+
             elif ex.category == Exercise_Type["Distance"]:
-                time = get_input("Time(minutes): ", 3, "f")
-                if time is False:
-                    clear_message()
-                    return
-                dist = get_input("Distance(kilometers): ", 3, "f")
-                if dist is False:
-                    clear_message()
-                    return
-                record.append([time + "m", dist + "km"])
+                while True:
+                    time = get_input("Time(minutes): ", 3, "f")
+                    if time is False:
+                        clear_message()
+                        return
+                    dist = get_input("Distance(kilometers): ", 3, "f")
+                    if dist is False:
+                        clear_message()
+                        return
+                    record.append([time + "m", dist + "km"])
+                    if not yn_prompt("Add more sets? (y/n)"):
+                        #if yn_prompt("Add notes? (y/n)")
+                        #    notes = get_input("Notes: ", 64)
+                        break
 
             ex.add_record({get_date(): record})
 
@@ -266,7 +284,7 @@ def get_input(prompt, max_length, input_type):
         stdscr.refresh()
         string_input = stdscr.getstr(curses.LINES - 1, len(prompt) + 1, max_length)
         string_input = string_input.decode("utf-8")
-        if string_input == "q":
+        if string_input.lower() == "q":
             return False
         if input_type == "i" and is_int(string_input):
             break
@@ -278,7 +296,7 @@ def get_input(prompt, max_length, input_type):
     curses.noecho()
     return string_input
 
-def update_display(display_list): # No support for text formatting (colors etc)
+def update_display_pad(display_list): # No support for text formatting (colors etc)
     display_pad.erase()
     if display_list:
         for line_number in range(len(display_list)):
@@ -286,20 +304,26 @@ def update_display(display_list): # No support for text formatting (colors etc)
     global display_pad_pos
     display_pad_pos = len(display_list) - curses.LINES + 4
 
-def update_options(option_dict, selected):
+def update_display_win(focused):
+    display_window.chgat(curses.A_NORMAL)
+    if focused:
+        global display_pad_pos
+        display_window.chgat(display_pad_pos, 0, -1, curses.A_REVERSE)
+
+def update_options(option_dict, selector, focused):
     option_window.erase()
     option_number = 0
     for key in option_dict:
         option_window.addstr(option_number * 2, 0, key, curses.A_REVERSE)
         option_window.addstr(option_number * 2, 2, option_dict[key])
-        if option_number == selected:
+        if option_number == selector and focused:
             option_window.chgat(option_number * 2, 0, -1, curses.A_REVERSE)
         option_number += 1
 
 def draw_windows():
     stdscr.noutrefresh()
     main_window.noutrefresh()
-    display_window.noutrefresh(display_pad_pos, 0, 2, 2, curses.LINES - 3, vertical_divide)
+    display_window.noutrefresh(display_pad_pos, 0, 2, 2, curses.LINES - 3, vertical_divide - 1)
     option_window.noutrefresh()
     curses.doupdate()
     stdscr.move(curses.LINES - 1, 1)
@@ -342,7 +366,8 @@ if __name__ == "__main__":
     while True:
         if option_menu == "main":
             option_dict = MAIN_OPTION_DICT
-        update_options(option_dict, option_selector)
+        update_options(option_dict, option_selector, (True if focus_areas[focus] == "options" else False))
+        update_display_win((True if focus_areas[focus] == "display" else False))
         draw_windows()
         option = stdscr.getkey()
 
@@ -386,12 +411,12 @@ if __name__ == "__main__":
                     if exercise_list == []:
                         show_message("No records found...")
                     else:
-                        update_display(view_todays_records())
+                        update_display_pad(view_todays_records())
                 elif option.lower() == "a":
                     if exercise_list == []:
                         show_message("No records found...")
                     else:
-                        update_display(view_all_records())
+                        update_display_pad(view_all_records())
                 elif option.lower() == "e":
                     if exercise_list == []:
                         show_message("No records found...")
@@ -402,7 +427,7 @@ if __name__ == "__main__":
                 elif option.lower() == "s":
                     save_records()
                 elif option.lower() == "h":
-                    update_display(HELP_LIST)
+                    update_display_pad(HELP_LIST)
                 elif option.lower() == "q":
                     break
 
@@ -416,7 +441,7 @@ if __name__ == "__main__":
 
             elif option_menu == "exercises-view":
                 if option.upper() in option_dict:
-                    update_display(view_exercise_records(option_dict[option.upper()]))
+                    update_display_pad(view_exercise_records(option_dict[option.upper()]))
                     option_menu = "main"
                 elif option == "KEY_HOME":
                     option_selector = 0
