@@ -91,7 +91,7 @@ def save_records():
 def input_exercise():
     #print("Add a new Exercise")
     name = get_input("Exercise name: ", MAX_EX_NAME_LENGTH, "s")
-    if name.lower() == "q":
+    if name == False:
         return
     #print("What type of Exercise? ")
     category = int(get_input("1: Resistance, 2: Bodyweight, 3: Isometric, 4: Distance: ", 1, "i"))
@@ -123,8 +123,17 @@ def input_record(ex_name):
             if ex.category == Exercise_Type["Resistance"]:
                 while True:
                     weight = get_input("Weight(kilograms): ", 4, "f")
+                    if weight is False:
+                        clear_message()
+                        return
                     reps = get_input("Reps: ", 2, "i")
+                    if reps is False:
+                        clear_message()
+                        return
                     sets = get_input("Sets: ", 2, "i")
+                    if sets is False:
+                        clear_message()
+                        return
                     record.append([weight + "kg", reps, sets])
                     if not yn_prompt("Add more sets? (y/n)"):
                         #if yn_prompt("Add notes? (y/n)")
@@ -132,15 +141,33 @@ def input_record(ex_name):
                         break
             elif ex.category == Exercise_Type["Bodyweight"]:
                 reps = get_input("Reps: ", 2, "i")
+                if reps is False:
+                    clear_message()
+                    return
                 sets = get_input("Sets: ", 2, "i")
+                if sets is False:
+                    clear_message()
+                    return
                 record.append([reps, sets])
             elif ex.category == Exercise_Type["Isometric"]:
                 time = get_input("Time(seconds): ", 3, "i")
+                if time is False:
+                    clear_message()
+                    return
                 reps = get_input("Sets: ", 2, "i")
+                if reps is False:
+                    clear_message()
+                    return
                 record.append([time + "s", reps])
             elif ex.category == Exercise_Type["Distance"]:
                 time = get_input("Time(minutes): ", 3, "f")
+                if time is False:
+                    clear_message()
+                    return
                 dist = get_input("Distance(kilometers): ", 3, "f")
+                if dist is False:
+                    clear_message()
+                    return
                 record.append([time + "m", dist + "km"])
 
             ex.add_record({get_date(): record})
@@ -239,6 +266,8 @@ def get_input(prompt, max_length, input_type):
         stdscr.refresh()
         string_input = stdscr.getstr(curses.LINES - 1, len(prompt) + 1, max_length)
         string_input = string_input.decode("utf-8")
+        if string_input == "q":
+            return False
         if input_type == "i" and is_int(string_input):
             break
         if input_type == "f" and is_float(string_input):
@@ -275,8 +304,15 @@ def draw_windows():
     curses.doupdate()
     stdscr.move(curses.LINES - 1, 1)
 
+HELP_LIST = ["Press TAB to switch between the display window and the options window","",
+             "Move up and down in the options menu or display windows with the arrow keys","",
+             "Options can be selected by pressing the letter or number next to the option",
+             "To return to the main options menu from another menu press HOME",
+             "To cancel entering data and return to the main menu enter the letter q and press enter"]
 
-MAIN_OPTION_DICT = {"N": "New Exercise", "R": "Add Record", "V": "View Today's Record", "A": "View All Records", "E": "View Exercise Records", "S": "Save Records" , "Q": "Quit"}
+MAIN_OPTION_DICT = {"N": "New Exercise", "R": "Add Record", "V": "View Today's Record",
+                    "A": "View All Records", "E": "View Exercise Records",
+                    "S": "Save Records", "H": "Help", "Q": "Quit"}
 
 if __name__ == "__main__":
     stdscr = curses.initscr()
@@ -319,6 +355,7 @@ if __name__ == "__main__":
                 focus += 1
                 if focus > len(focus_areas) - 1:
                     focus -= len(focus_areas)
+
         elif focus_areas[focus] == "options":
             if option == "KEY_UP":
                 option_selector -= 1
@@ -364,8 +401,11 @@ if __name__ == "__main__":
                         option_menu = "exercises-view"
                 elif option.lower() == "s":
                     save_records()
+                elif option.lower() == "h":
+                    update_display(HELP_LIST)
                 elif option.lower() == "q":
                     break
+
             elif option_menu == "exercises-record":
                 if option.upper() in option_dict:
                     input_record(option_dict[option.upper()])
@@ -373,6 +413,7 @@ if __name__ == "__main__":
                 elif option == "KEY_HOME":
                     option_selector = 0
                     option_menu = "main"
+
             elif option_menu == "exercises-view":
                 if option.upper() in option_dict:
                     update_display(view_exercise_records(option_dict[option.upper()]))
