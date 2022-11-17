@@ -16,6 +16,13 @@ def get_date():
     today = datetime.date.today()
     return today.strftime("%d/%m/%Y")
 
+def is_date(string_to_check):
+    try:
+        datetime.datetime.strptime(string_to_check, "%d/%m/%Y")
+        return True
+    except ValueError:
+        return False
+
 class Exercise:
     def __init__(self, name, category):
         self.name = name
@@ -31,11 +38,10 @@ def load_records():
     rec_date = "01/01/2000"
     for line in file:
         line = line.rstrip('\n')
-        try:
-            datetime.datetime.strptime(line,"%d/%m/%Y")
+        if is_date(line):
             rec_date = line
             records_started = True
-        except ValueError:
+        else:
             if line == "":
                 pass
             elif line[0] == "-" and records_started:
@@ -245,7 +251,7 @@ def end_curses():
 
 def show_message(message):
     clear_message()
-    stdscr.addstr(curses.LINES - 1, 1, message)
+    stdscr.addstr(curses.LINES - 1, 1, str(message))
 
 def clear_message():
     stdscr.addstr(curses.LINES -1, 1, str(" " * (curses.COLS - 2)))
@@ -298,17 +304,67 @@ def get_input(prompt, max_length, input_type):
 
 def update_display_pad(display_list): # No support for text formatting (colors etc)
     display_pad.erase()
+    global display_pad_y_pos
     if display_list:
         for line_number in range(len(display_list)):
             display_pad.addstr(line_number, 0, display_list[line_number])
-    global display_pad_pos
-    display_pad_pos = len(display_list) - curses.LINES + 4
+        display_pad_y_pos = len(display_list) - curses.LINES + 4
+        if display_pad_y_pos < 0:
+            display_pad_y_pos = 0
+    else:
+        display_pad_y_pos = 0
 
 def update_display_win(focused):
     display_window.chgat(curses.A_NORMAL)
     if focused:
-        global display_pad_pos
-        display_window.chgat(display_pad_pos, 0, -1, curses.A_REVERSE)
+        global display_pad_x_pos
+        global display_pad_y_pos
+        if current_display not in [0, 4]:
+            selected_line = display_pad.instr(display_pad_y_pos, 0, curses.COLS - 4).decode('utf-8').replace(' ', '')
+
+            if display_types[current_display] == "all_records":
+                if selected_line != '':
+                    if is_date(selected_line):
+                        show_message(selected_line)
+                        if display_pad_x_pos == 0:
+                            display_window.chgat(display_pad_y_pos, 0, 2, curses.A_REVERSE)
+                        elif display_pad_x_pos == 1:
+                            display_window.chgat(display_pad_y_pos, 3, 2, curses.A_REVERSE)
+                        else:
+                            display_pad_x_pos = 2
+                            display_window.chgat(display_pad_y_pos, 6, 4, curses.A_REVERSE)
+                            
+
+                    else:
+                        exercise_name_list = [ex.name for ex in exercise_list]
+                        exercise_name_line = selected_line
+                        i = 1
+                        while ':' not in exercise_name_line:
+                            exercise_name_line = display_pad.instr(display_pad_y_pos - i, 0, curses.COLS - 4).decode('utf-8').replace(' ', '')
+                            i += 1
+                        for name in exercise_name_list:
+                            if name.replace(' ', '') == exercise_name_line.split(':')[0]:
+                                if display_pad_x_pos == 0:
+                                    display_window.chgat(display_pad_y_pos + 1 - i, 0, len(name), curses.A_REVERSE)
+                                elif display_pad_x_pos == 1:
+                                    #Need to start finding actual exercise records for figuring out exercise type, length of values and to modify
+                                    display_window.chgat(display_pad_y_pos, len(name) + 2, 2, curses.A_REVERSE)
+
+
+                                j = 1
+                                while j <= display_pad_y_pos:
+                                    line = display_pad.instr(display_pad_y_pos - j, 0, curses.COLS - 4).decode('utf-8').replace(' ', '')
+                                    j += 1
+                                    if is_date(line):
+                                        date = line
+                                        show_message(date + " " + name)
+                                        break
+                            else:
+                                clear_message()
+                else:
+                    display_pad_x_pos = 0
+                    clear_message()
+                    display_window.chgat(display_pad_y_pos, 0, 1, curses.A_REVERSE)
 
 def update_options(option_dict, selector, focused):
     option_window.erase()
@@ -323,7 +379,7 @@ def update_options(option_dict, selector, focused):
 def draw_windows():
     stdscr.noutrefresh()
     main_window.noutrefresh()
-    display_window.noutrefresh(display_pad_pos, 0, 2, 2, curses.LINES - 3, vertical_divide - 1)
+    display_window.noutrefresh(display_pad_y_pos, 0, 2, 2, curses.LINES - 3, vertical_divide - 1)
     option_window.noutrefresh()
     curses.doupdate()
     stdscr.move(curses.LINES - 1, 1)
@@ -353,9 +409,12 @@ if __name__ == "__main__":
     focus_areas = ["display", "options"]
     focus = 1
 
-    display_pad_pos = 0
+    display_pad_y_pos = 0
+    display_pad_x_pos = 0
     display_pad = curses.newpad(4096, 256)
     display_window = display_pad.subpad(0, 0)
+    display_types = ["empty", "all_records", "todays_records", "exercise_records", "help"]
+    current_display = 0
 
     option_menu = "main"
     option_dict = MAIN_OPTION_DICT
@@ -372,10 +431,14 @@ if __name__ == "__main__":
         option = stdscr.getkey()
 
         if focus_areas[focus] == "display":
-            if option == "KEY_UP" and display_pad_pos > 0:
-                display_pad_pos -= 1
+            if option == "KEY_UP" and display_pad_y_pos > 0:
+                display_pad_y_pos -= 1
             elif option == "KEY_DOWN":
-                display_pad_pos += 1
+                display_pad_y_pos += 1
+            elif option == "KEY_LEFT" and display_pad_x_pos > 0:
+                display_pad_x_pos -= 1
+            elif option == "KEY_RIGHT":
+                display_pad_x_pos += 1
             elif option == "\t":
                 focus += 1
                 if focus > len(focus_areas) - 1:
@@ -412,11 +475,13 @@ if __name__ == "__main__":
                         show_message("No records found...")
                     else:
                         update_display_pad(view_todays_records())
+                        current_display = 2
                 elif option.lower() == "a":
                     if exercise_list == []:
                         show_message("No records found...")
                     else:
                         update_display_pad(view_all_records())
+                        current_display = 1
                 elif option.lower() == "e":
                     if exercise_list == []:
                         show_message("No records found...")
@@ -428,6 +493,7 @@ if __name__ == "__main__":
                     save_records()
                 elif option.lower() == "h":
                     update_display_pad(HELP_LIST)
+                    current_display = 4
                 elif option.lower() == "q":
                     break
 
@@ -442,6 +508,7 @@ if __name__ == "__main__":
             elif option_menu == "exercises-view":
                 if option.upper() in option_dict:
                     update_display_pad(view_exercise_records(option_dict[option.upper()]))
+                    current_display = 3
                     option_menu = "main"
                 elif option == "KEY_HOME":
                     option_selector = 0
