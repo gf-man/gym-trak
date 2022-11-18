@@ -338,27 +338,43 @@ def update_display_win(focused):
                     else:
                         exercise_name_list = [ex.name for ex in exercise_list]
                         exercise_name_line = selected_line
-                        i = 1
+                        i = 0
                         while ':' not in exercise_name_line:
-                            exercise_name_line = display_pad.instr(display_pad_y_pos - i, 0, curses.COLS - 4).decode('utf-8').replace(' ', '')
                             i += 1
+                            exercise_name_line = display_pad.instr(display_pad_y_pos - i, 0, curses.COLS - 4).decode('utf-8').replace(' ', '')
                         for name in exercise_name_list:
                             if name.replace(' ', '') == exercise_name_line.split(':')[0]:
-                                if display_pad_x_pos == 0:
-                                    display_window.chgat(display_pad_y_pos + 1 - i, 0, len(name), curses.A_REVERSE)
-                                elif display_pad_x_pos == 1:
-                                    #Need to start finding actual exercise records for figuring out exercise type, length of values and to modify
-                                    display_window.chgat(display_pad_y_pos, len(name) + 2, 2, curses.A_REVERSE)
-
-
+                                date = ''
                                 j = 1
                                 while j <= display_pad_y_pos:
                                     line = display_pad.instr(display_pad_y_pos - j, 0, curses.COLS - 4).decode('utf-8').replace(' ', '')
                                     j += 1
                                     if is_date(line):
                                         date = line
-                                        show_message(date + " " + name)
+                                        show_message(date + ' ' + name)
                                         break
+
+                                for k in range(len(exercise_list)):
+                                    if exercise_list[k].name == name:
+                                        break
+
+
+                                if display_pad_x_pos == 0:
+                                    display_window.chgat(display_pad_y_pos - i, 0, len(name), curses.A_REVERSE)
+                                elif display_pad_x_pos > 0:
+                                    if display_pad_x_pos > len(exercise_list[k].record[date][i]):
+                                        display_pad_x_pos = len(exercise_list[k].record[date][i])
+                                    selected_section = exercise_list[k].record[date][i][display_pad_x_pos - 1]
+                                    show_message(selected_section)
+                                    if display_pad_x_pos == 1:
+                                        display_window.chgat(display_pad_y_pos, len(name) + 2, len(selected_section), curses.A_REVERSE)
+                                    elif display_pad_x_pos > 1:
+                                        sum_of_previous_sections = 0
+                                        for section in exercise_list[k].record[date][i][:display_pad_x_pos - 1]:
+                                            sum_of_previous_sections += len(section)
+                                        display_window.chgat(display_pad_y_pos, len(name) + 2 + sum_of_previous_sections + display_pad_x_pos - 1,
+                                                             len(selected_section), curses.A_REVERSE)
+                                break
                             else:
                                 clear_message()
                 else:
