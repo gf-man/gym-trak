@@ -1,4 +1,5 @@
 import curses
+import re
 import math
 import datetime
 from enum import Enum
@@ -8,8 +9,19 @@ Exercise_Type = Enum("Exercise_Type", ["Resistance", "Bodyweight", "Isometric", 
 
 MAX_EX_NAME_LENGTH = 20
 
+class Exercise:
+    def __init__(self, name, category):
+        self.name = name
+        self.category = Exercise_Type(category)
+        self.record = {}
+
+    def add_record(self, record):
+        self.record.update(record)
+
 exercise_list = []
 date_list = []
+
+selected_section_position = []
 
 
 def get_date():
@@ -23,14 +35,6 @@ def is_date(string_to_check):
     except ValueError:
         return False
 
-class Exercise:
-    def __init__(self, name, category):
-        self.name = name
-        self.category = Exercise_Type(category)
-        self.record = {}
-
-    def add_record(self, record):
-        self.record.update(record)
 
 def load_records():
     file = open("gym.md", "r")
@@ -128,7 +132,7 @@ def input_record(ex_name):
 
             if ex.category == Exercise_Type["Resistance"]:
                 while True:
-                    weight = get_input("Weight(kilograms): ", 4, "f")
+                    weight = get_input("Weight(kilograms): ", 5, "f")
                     if weight is False:
                         clear_message()
                         return
@@ -302,19 +306,22 @@ def get_input(prompt, max_length, input_type):
     curses.noecho()
     return string_input
 
-def update_display_pad(display_list): # No support for text formatting (colors etc)
+def update_display_pad(display_list, update_y_pos = True): # No support for text formatting (colors etc)
     display_pad.erase()
     global display_pad_y_pos
     if display_list:
         for line_number in range(len(display_list)):
             display_pad.addstr(line_number, 0, display_list[line_number])
-        display_pad_y_pos = len(display_list) - curses.LINES + 4
-        if display_pad_y_pos < 0:
+        if update_y_pos:
+            display_pad_y_pos = len(display_list) - curses.LINES + 4
+        if display_pad_y_pos < 0 and update_y_pos:
             display_pad_y_pos = 0
-    else:
+    elif update_y_pos:
         display_pad_y_pos = 0
 
 def update_display_win(focused):
+    global selected_section_position
+    selected_section_position = []
     display_window.chgat(curses.A_NORMAL)
     if focused:
         global display_pad_x_pos
@@ -364,7 +371,8 @@ def update_display_win(focused):
                                 elif display_pad_x_pos > 0:
                                     if display_pad_x_pos > len(exercise_list[k].record[date][i]):
                                         display_pad_x_pos = len(exercise_list[k].record[date][i])
-                                    selected_section = exercise_list[k].record[date][i][display_pad_x_pos - 1]
+                                    selected_section_position = [k,date,i,display_pad_x_pos - 1]
+                                    selected_section = exercise_list[selected_section_position[0]].record[selected_section_position[1]][selected_section_position[2]][selected_section_position[3]]
                                     show_message(selected_section)
                                     if display_pad_x_pos == 1:
                                         display_window.chgat(display_pad_y_pos, len(name) + 2, len(selected_section), curses.A_REVERSE)
@@ -459,6 +467,21 @@ if __name__ == "__main__":
                 focus += 1
                 if focus > len(focus_areas) - 1:
                     focus -= len(focus_areas)
+            elif option == "\n":
+                if selected_section_position != []:
+                    if exercise_list[selected_section_position[0]].category == Exercise_Type["Resistance"] and selected_section_position[3] == 0:
+                        exercise_list[selected_section_position[0]].record[selected_section_position[1]][selected_section_position[2]][selected_section_position[3]] = get_input("New weight(kg):", 5, 'f') + 'kg'
+                    elif exercise_list[selected_section_position[0]].category == Exercise_Type["Isometric"] and selected_section_position[3] == 0:
+                        exercise_list[selected_section_position[0]].record[selected_section_position[1]][selected_section_position[2]][selected_section_position[3]] = get_input("New time(s):", 3, 'f') + 's'
+                    elif exercise_list[selected_section_position[0]].category == Exercise_Type["Distance"] and selected_section_position[3] == 0:
+                        exercise_list[selected_section_position[0]].record[selected_section_position[1]][selected_section_position[2]][selected_section_position[3]] = get_input("New time(s):", 3, 'f') + 's'
+                    elif exercise_list[selected_section_position[0]].category == Exercise_Type["Distance"] and selected_section_position[3] == 1:
+                        exercise_list[selected_section_position[0]].record[selected_section_position[1]][selected_section_position[2]][selected_section_position[3]] = get_input("New distance(km):", 3, 'f') + 'km'
+                    else:
+                        exercise_list[selected_section_position[0]].record[selected_section_position[1]][selected_section_position[2]][selected_section_position[3]] = get_input("New value:", 3, 'i')
+                    update_display_pad(view_all_records(), False)
+                    update_display_win(True)
+                    draw_windows()
 
         elif focus_areas[focus] == "options":
             if option == "KEY_UP":
