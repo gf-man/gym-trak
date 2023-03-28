@@ -3,6 +3,16 @@ import math
 import datetime
 from enum import Enum
 
+HELP_LIST = ["Press TAB to switch between the display window and the options window","",
+             "Move up and down in the options menu or display windows with the arrow keys","",
+             "Options can be selected by pressing the letter or number next to the option",
+             "To return to the main options menu from another menu press HOME",
+             "To cancel entering data and return to the main menu enter the letter q and press enter"]
+
+MAIN_OPTION_DICT = {"N": "New Exercise", "R": "Add Record", "V": "View Today's Record",
+                    "A": "View All Records", "E": "View Exercise Records",
+                    "S": "Save Records", "H": "Help", "Q": "Quit"}
+
 
 Exercise_Type = Enum("Exercise_Type", ["Resistance", "Bodyweight", "Isometric", "Distance"])
 
@@ -442,27 +452,24 @@ def draw_windows():
     curses.doupdate()
     stdscr.move(curses.LINES - 1, 1)
 
-HELP_LIST = ["Press TAB to switch between the display window and the options window","",
-             "Move up and down in the options menu or display windows with the arrow keys","",
-             "Options can be selected by pressing the letter or number next to the option",
-             "To return to the main options menu from another menu press HOME",
-             "To cancel entering data and return to the main menu enter the letter q and press enter"]
-
-MAIN_OPTION_DICT = {"N": "New Exercise", "R": "Add Record", "V": "View Today's Record",
-                    "A": "View All Records", "E": "View Exercise Records",
-                    "S": "Save Records", "H": "Help", "Q": "Quit"}
-
-if __name__ == "__main__":
-    stdscr = curses.initscr()
-    start_curses()
+def init_windows():
     stdscr.addstr(0, 0, "gym-trak", curses.A_REVERSE)
     stdscr.addstr(0, curses.COLS - len(get_date()), get_date(), curses.A_REVERSE)
     stdscr.chgat(0, 0, -1, curses.A_REVERSE)
-
+    global main_window
     main_window = curses.newwin(curses.LINES - 2, curses.COLS, 1, 0)
     main_window.box()
-
+    global vertical_divide
     vertical_divide = math.floor(curses.COLS * 0.6667)
+    global option_window
+    option_window = main_window.subwin(curses.LINES - 4, curses.COLS - vertical_divide - 2, 2, vertical_divide + 1)
+
+if __name__ == "__main__":
+    stdscr = curses.initscr()
+    screen_dimensions = stdscr.getmaxyx()
+    start_curses()
+
+    init_windows()
 
     focus_areas = ["display", "options"]
     focus = 1
@@ -477,16 +484,23 @@ if __name__ == "__main__":
     option_menu = "main"
     option_dict = MAIN_OPTION_DICT
     option_selector = 0
-    option_window = main_window.subwin(curses.LINES - 4, curses.COLS - vertical_divide - 2, 2, vertical_divide + 1)
 
     load_records()
     while True:
+        if stdscr.getmaxyx() != screen_dimensions:
+            screen_dimensions = stdscr.getmaxyx()
+            stdscr.clear()
+            curses.resize_term(screen_dimensions[0], screen_dimensions[1])
+            init_windows()
+
+
         if option_menu == "main":
             option_dict = MAIN_OPTION_DICT
         update_options(option_dict, option_selector, (True if focus_areas[focus] == "options" else False))
         update_display_win((True if focus_areas[focus] == "display" else False))
         draw_windows()
         option = stdscr.getkey()
+
 
         if focus_areas[focus] == "display":
             if option == "KEY_UP" and display_pad_y_pos > 0:
