@@ -434,14 +434,18 @@ def update_display_win(focused):
                             sum_of_previous_sections += len(section)
                         display_window.chgat(display_pad_y_pos, 12 + sum_of_previous_sections + display_pad_x_pos, len(selected_section), curses.A_REVERSE)
 
-def update_options(option_dict, selector, focused):
+def update_options(option_dict, selector, focused, compact = True):
+    if compact:
+        gap = 1
+    else:
+        gap = 2
     option_window.erase()
     option_number = 0
     for key in option_dict:
-        option_window.addstr(option_number * 2, 0, key, curses.A_REVERSE)
-        option_window.addstr(option_number * 2, 2, option_dict[key])
+        option_window.addstr(option_number * gap, 0, key, curses.A_REVERSE)
+        option_window.addstr(option_number * gap, 2, option_dict[key])
         if option_number == selector and focused:
-            option_window.chgat(option_number * 2, 0, -1, curses.A_REVERSE)
+            option_window.chgat(option_number * gap, 0, -1, curses.A_REVERSE)
         option_number += 1
 
 def draw_windows():
@@ -491,6 +495,7 @@ if __name__ == "__main__":
             screen_dimensions = stdscr.getmaxyx()
             stdscr.clear()
             curses.resize_term(screen_dimensions[0], screen_dimensions[1])
+            curses.resizeterm(screen_dimensions[0], screen_dimensions[1])
             init_windows()
 
 
