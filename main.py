@@ -1,5 +1,4 @@
 import curses
-import re
 import math
 import datetime
 from enum import Enum
@@ -349,17 +348,18 @@ def update_display_win(focused):
                         while ':' not in exercise_name_line:
                             i += 1
                             exercise_name_line = display_pad.instr(display_pad_y_pos - i, 0, curses.COLS - 4).decode('utf-8').replace(' ', '')
+
                         for name in exercise_name_list:
                             if name.replace(' ', '') == exercise_name_line.split(':')[0]:
                                 date = ''
                                 j = 1
                                 while j <= display_pad_y_pos:
                                     line = display_pad.instr(display_pad_y_pos - j, 0, curses.COLS - 4).decode('utf-8').replace(' ', '')
-                                    j += 1
                                     if is_date(line):
                                         date = line
                                         show_message(date + ' ' + name)
                                         break
+                                    j += 1
 
                                 for k in range(len(exercise_list)):
                                     if exercise_list[k].name == name:
@@ -389,6 +389,40 @@ def update_display_win(focused):
                     display_pad_x_pos = 0
                     clear_message()
                     display_window.chgat(display_pad_y_pos, 0, 1, curses.A_REVERSE)
+            elif display_types[current_display] == "exercise_records":
+                if 'x' in selected_line:
+                    exercise_date_line = selected_line
+                    i = 0
+                    while ':' not in exercise_date_line:
+                        i += 1
+                        exercise_date_line = display_pad.instr(display_pad_y_pos - i, 0, curses.COLS - 4).decode('utf-8').replace(' ', '')
+                    date = ''
+                    if is_date(selected_line.split(':')[0]):
+                        date = selected_line.split(':')[0]
+                    else:
+                        j = 1
+                        while j <= display_pad_y_pos:
+                            line = display_pad.instr(display_pad_y_pos - j, 0, curses.COLS - 4).decode('utf-8').replace(' ', '')
+                            if is_date(line.split(':')[0]):
+                                date = line.split(':')[0]
+                                break
+                            j += 1
+                    for k in range(len(exercise_list)):
+                        if exercise_list[k].name == display_pad.instr(0, 0, curses.COLS - 4).decode('utf-8').replace(' ', ''):
+                            break
+
+                    if display_pad_x_pos >= len(exercise_list[k].record[date][i]):
+                        display_pad_x_pos = len(exercise_list[k].record[date][i]) - 1
+
+                    selected_section_position = [k, date, i, display_pad_x_pos]
+                    selected_section = exercise_list[selected_section_position[0]].record[selected_section_position[1]][selected_section_position[2]][selected_section_position[3]]
+                    if display_pad_x_pos == 0:
+                        display_window.chgat(display_pad_y_pos, 12, len(selected_section), curses.A_REVERSE)
+                    else:
+                        sum_of_previous_sections = 0
+                        for section in exercise_list[k].record[date][i][:display_pad_x_pos]:
+                            sum_of_previous_sections += len(section)
+                        display_window.chgat(display_pad_y_pos, 12 + sum_of_previous_sections + display_pad_x_pos, len(selected_section), curses.A_REVERSE)
 
 def update_options(option_dict, selector, focused):
     option_window.erase()
@@ -479,7 +513,10 @@ if __name__ == "__main__":
                         exercise_list[selected_section_position[0]].record[selected_section_position[1]][selected_section_position[2]][selected_section_position[3]] = get_input("New distance(km):", 3, 'f') + 'km'
                     else:
                         exercise_list[selected_section_position[0]].record[selected_section_position[1]][selected_section_position[2]][selected_section_position[3]] = get_input("New value:", 3, 'i')
-                    update_display_pad(view_all_records(), False)
+                    if display_types[current_display] == "all_records":
+                        update_display_pad(view_all_records(), False)
+                    elif display_types[current_display] == "exercise_records":
+                        update_display_pad(view_exercise_records(exercise_list[selected_section_position[0]].name), False)
                     update_display_win(True)
                     draw_windows()
 
