@@ -390,8 +390,7 @@ def update_display_win(focused):
                                         sum_of_previous_sections = 0
                                         for section in exercise_list[k].record[date][i][:display_pad_x_pos - 1]:
                                             sum_of_previous_sections += len(section)
-                                        display_window.chgat(display_pad_y_pos, len(name) + 2 + sum_of_previous_sections + display_pad_x_pos - 1,
-                                                             len(selected_section), curses.A_REVERSE)
+                                        display_window.chgat(display_pad_y_pos, len(name) + 2 + sum_of_previous_sections + display_pad_x_pos - 1, len(selected_section), curses.A_REVERSE)
                                 break
                             else:
                                 clear_message()
@@ -399,6 +398,40 @@ def update_display_win(focused):
                     display_pad_x_pos = 0
                     clear_message()
                     display_window.chgat(display_pad_y_pos, 0, 1, curses.A_REVERSE)
+            elif display_types[current_display] == "todays_records":
+                exercise_name_list = [ex.name for ex in exercise_list]
+                exercise_name_line = selected_line
+                i = 0
+                while ':' not in exercise_name_line:
+                    i += 1
+                    exercise_name_line = display_pad.instr(display_pad_y_pos - i, 0, curses.COLS - 4).decode('utf-8').replace(' ', '')
+
+                for name in exercise_name_list:
+                    if name.replace(' ', '') == exercise_name_line.split(':')[0]:
+                        date = get_date()
+
+                        for k in range(len(exercise_list)):
+                            if exercise_list[k].name == name:
+                                break
+
+                        if display_pad_x_pos == 0:
+                            display_window.chgat(display_pad_y_pos - i, 0, len(name), curses.A_REVERSE)
+                        elif display_pad_x_pos > 0:
+                            if display_pad_x_pos > len(exercise_list[k].record[date][i]):
+                                display_pad_x_pos = len(exercise_list[k].record[date][i])
+                            selected_section_position = [k,date,i,display_pad_x_pos - 1]
+                            selected_section = exercise_list[selected_section_position[0]].record[selected_section_position[1]][selected_section_position[2]][selected_section_position[3]]
+                            show_message(selected_section)
+                            if display_pad_x_pos == 1:
+                                display_window.chgat(display_pad_y_pos, len(name) + 2, len(selected_section), curses.A_REVERSE)
+                            elif display_pad_x_pos > 1:
+                                sum_of_previous_sections = 0
+                                for section in exercise_list[k].record[date][i][:display_pad_x_pos - 1]:
+                                    sum_of_previous_sections += len(section)
+                                display_window.chgat(display_pad_y_pos, len(name) + 2 + sum_of_previous_sections + display_pad_x_pos - 1, len(selected_section), curses.A_REVERSE)
+                    break
+                
+
             elif display_types[current_display] == "exercise_records":
                 if 'x' in selected_line:
                     exercise_date_line = selected_line
@@ -426,6 +459,7 @@ def update_display_win(focused):
 
                     selected_section_position = [k, date, i, display_pad_x_pos]
                     selected_section = exercise_list[selected_section_position[0]].record[selected_section_position[1]][selected_section_position[2]][selected_section_position[3]]
+                    show_message(selected_section)
                     if display_pad_x_pos == 0:
                         display_window.chgat(display_pad_y_pos, 12, len(selected_section), curses.A_REVERSE)
                     else:
@@ -501,10 +535,12 @@ if __name__ == "__main__":
 
         if option_menu == "main":
             option_dict = MAIN_OPTION_DICT
+
         update_options(option_dict, option_selector, (True if focus_areas[focus] == "options" else False))
         update_display_win((True if focus_areas[focus] == "display" else False))
         draw_windows()
         option = stdscr.getkey()
+
 
 
         if focus_areas[focus] == "display":
@@ -534,6 +570,8 @@ if __name__ == "__main__":
                         exercise_list[selected_section_position[0]].record[selected_section_position[1]][selected_section_position[2]][selected_section_position[3]] = get_input("New value:", 3, 'i')
                     if display_types[current_display] == "all_records":
                         update_display_pad(view_all_records(), False)
+                    elif display_types[current_display] == "todays_records":
+                        update_display_pad(view_todays_records(), False)
                     elif display_types[current_display] == "exercise_records":
                         update_display_pad(view_exercise_records(exercise_list[selected_section_position[0]].name), False)
                     update_display_win(True)
