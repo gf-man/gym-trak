@@ -476,11 +476,12 @@ def update_options(option_dict, selector, focused, compact = True):
     option_window.erase()
     option_number = 0
     for key in option_dict:
-        option_window.addstr(option_number * gap, 0, key, curses.A_REVERSE)
-        option_window.addstr(option_number * gap, 2, option_dict[key])
-        if option_number == selector and focused:
-            option_window.chgat(option_number * gap, 0, -1, curses.A_REVERSE)
-        option_number += 1
+        if not option_number * gap >= curses.LINES - 4:
+            option_window.addstr(option_number * gap, 0, key, curses.A_REVERSE)
+            option_window.addstr(option_number * gap, 2, option_dict[key])
+            if option_number == selector and focused:
+                option_window.chgat(option_number * gap, 0, -1, curses.A_REVERSE)
+            option_number += 1
 
 def draw_windows():
     stdscr.noutrefresh()
