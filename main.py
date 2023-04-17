@@ -106,6 +106,7 @@ def save_records():
                 file.write(output_line)
         file.write("\n")
     file.close()
+    show_message("Saved to gym.md")
 
 def input_exercise():
     #print("Add a new Exercise")
@@ -478,8 +479,8 @@ def update_display_win(focused):
                     clear_message()
                     display_window.chgat(display_pad_y_pos, 0, 1, curses.A_REVERSE)
 
-def update_options(option_dict, selector, focused, compact = True):
-    if compact:
+def update_options(option_dict, selector, focused):
+    if len(option_dict) * 2 > curses.LINES - 6:
         gap = 1
     else:
         gap = 2
