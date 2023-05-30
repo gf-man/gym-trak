@@ -122,7 +122,7 @@ def generate_exercise_dict():
     ex_dict = {}
     counter = 1
     for ex in exercise_list:
-        if ex.name[0] not in ex_dict:
+        if ex.name[0].upper() not in ex_dict:
             ex_dict.update({ex.name[0].upper(): ex.name})
         else:
             ex_dict.update({str(counter): ex.name})
