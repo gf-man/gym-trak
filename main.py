@@ -112,10 +112,10 @@ def input_exercise():
     #print("Add a new Exercise")
     name = get_input("Exercise name: ", MAX_EX_NAME_LENGTH, "s")
     if name == False:
-        return
-    #print("What type of Exercise? ")
-    category = int(get_input("1: Resistance, 2: Bodyweight, 3: Isometric, 4: Distance: ", 1, "i"))
-    exercise_list.append(Exercise(name, category))
+        pass
+    else:
+        category = int(get_input("1: Resistance, 2: Bodyweight, 3: Isometric, 4: Distance: ", 1, "i"))
+        exercise_list.append(Exercise(name, category))
     clear_message()
 
 def generate_exercise_dict():
@@ -436,7 +436,6 @@ def update_display_win(focused):
                     display_pad_x_pos = 0
                     clear_message()
                     display_window.chgat(display_pad_y_pos, 0, 1, curses.A_REVERSE)
-                
 
             elif display_types[current_display] == "exercise_records":
                 if selected_line != '':
@@ -580,12 +579,14 @@ if __name__ == "__main__":
                         exercise_list[selected_section_position[0]].record[selected_section_position[1]][selected_section_position[2]][selected_section_position[3]] = get_input("New distance(km):", 3, 'f') + 'km'
                     else:
                         exercise_list[selected_section_position[0]].record[selected_section_position[1]][selected_section_position[2]][selected_section_position[3]] = get_input("New value:", 3, 'i')
+
                     if display_types[current_display] == "all_records":
                         update_display_pad(view_all_records(), False)
                     elif display_types[current_display] == "todays_records":
                         update_display_pad(view_todays_records(), False)
                     elif display_types[current_display] == "exercise_records":
                         update_display_pad(view_exercise_records(exercise_list[selected_section_position[0]].name), False)
+
                     update_display_win(True)
                     draw_windows()
 
