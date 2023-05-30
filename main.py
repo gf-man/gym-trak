@@ -30,6 +30,8 @@ class Exercise:
 exercise_list = []
 date_list = []
 
+ex_dict_overflow_chars = ['`', '-', '=', '[', ']', ';', "'", '#', ',', '.', '/' ,'!', '"', '£', '$', '%', '^', '&', '*', '(', ')', '_', '+', ':', '@', '~', '<', '>', '?']
+
 selected_section_position = []
 
 
@@ -120,12 +122,15 @@ def input_exercise():
 
 def generate_exercise_dict():
     ex_dict = {}
-    counter = 1
+    counter = 0
     for ex in exercise_list:
         if ex.name[0].upper() not in ex_dict:
             ex_dict.update({ex.name[0].upper(): ex.name})
         else:
-            ex_dict.update({str(counter): ex.name})
+            if counter > 9:
+                ex_dict.update({ex_dict_overflow_chars[counter - 10]: ex.name})
+            else:
+                ex_dict.update({str(counter): ex.name})
             counter += 1
     return ex_dict
 
