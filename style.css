@@ -1,0 +1,33 @@
+Header {
+	dock: top;
+	height: 1;
+}
+
+Footer {
+	dock: bottom;
+	height: 1;
+}
+
+NavBar {
+	align-horizontal: center;
+	dock: bottom;
+	height: 3;
+	background: $panel;
+	offset: 0 -1;
+}
+
+AllRecordsTree {
+	margin-bottom: 1
+}
+
+Button {
+	min-width: 7;
+	width: 1fr;
+	margin: 0 4;
+	background: $primary;
+}
+
+.menu_button {
+	width: 7;
+	background: $secondary;
+}
