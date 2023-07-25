@@ -1,7 +1,9 @@
-from textual import events
+from textual import events, on
 from textual.app import App, ComposeResult
-from textual.widgets import Header, Footer, Static, Button, Tree, MarkdownViewer
-from textual.containers import Horizontal, Vertical
+from textual.screen import ModalScreen
+from textual.widgets import Header, Footer, Static, Button, Tree, Select, Input
+from textual.reactive import reactive
+from textual.containers import Horizontal, Vertical, Grid, ScrollableContainer
 
 import math
 import datetime
@@ -114,7 +116,7 @@ def save_records():
                 file.write(output_line)
         file.write("\n")
     file.close()
-    show_message("Saved to gym.md")
+#    show_message("Saved to gym.md")
 
 def generate_exercise_dict():
     ex_dict = {}
@@ -131,7 +133,64 @@ def generate_exercise_dict():
     return ex_dict
 
 
+class AddRecordScreenOne(ModalScreen):
+    """Screen containing options for adding an exercise record"""
 
+    def compose(self) -> ComposeResult:
+        yield Grid(
+            Input(placeholder="Date (leave blank for today)"),
+            Select((ex.name, ex) for ex in exercise_list),
+            Button("Confirm", variant="success", id="confirm"),
+            Button("Cancel", variant="error", id="cancel")
+                )
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "cancel":
+            self.app.pop_screen()
+        elif event.button.id == "confirm":
+            self.dismiss([])
+
+class RecordDataInput(Horizontal):
+    """Widget for inputting record data, should change depending on exercise type"""
+
+    def compose(self) -> ComposeResult:
+        yield Input(placeholder="Weight")
+        yield Input(placeholder="Reps")
+        yield Input(placeholder="Sets")
+
+
+class AddRecordScreenTwo(ModalScreen):
+    """Screen containing record data allowing more rows to be added, will change depending on previously selected exercise (type)"""
+    number_of_added_record_data_inputs = 0
+
+    def compose(self) -> ComposeResult:
+        with Grid():
+            with ScrollableContainer(id="record_data_inputs"):
+                yield RecordDataInput()
+                with Horizontal(id="add_remove_buttons"):
+                    yield Button("Add", variant="success", id="add_record_data_input")
+                    yield Button("Remove", variant="error" ,id="remove_record_data_input")
+            yield Button("Confirm", variant="success", id="confirm")
+            yield Button("Cancel", variant="error", id="cancel")
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "cancel":
+            self.app.pop_screen()
+        elif event.button.id == "confirm":
+            self.dismiss([])
+
+    @on(Button.Pressed, "#add_record_data_input")
+    def action_add_record_data_input(self) -> None:
+        new_record_data_input = RecordDataInput()
+        self.query_one("#record_data_inputs").mount(new_record_data_input, after=self.number_of_added_record_data_inputs)
+        self.number_of_added_record_data_inputs += 1
+
+    @on(Button.Pressed, "#remove_record_data_input")
+    def action_remove_record_data_input(self) -> None:
+        record_data_inputs = self.query("RecordDataInput")
+        if record_data_inputs:
+            record_data_inputs.filter("RecordDataInput").last().remove()
+            self.number_of_added_record_data_inputs -= 1
 
 class AllRecordsTree(Tree):
     """A tree displaying all records by date allowing the user to edit records"""
@@ -154,28 +213,36 @@ class AllRecordsTree(Tree):
 
 
 
-class NavBar(Horizontal):
-    def compose(self) -> ComposeResult:
-        yield Button("One")
-        yield Button("Two")
-        yield Button("Three")
-        yield Button("X", classes="menu_button")
 
 
 class GymTrakApp(App):
     CSS_PATH = "style.css"
-    BINDINGS = [("d", "toggle_dark", "Toggle dark mode")]
+    BINDINGS = [("d", "toggle_dark", "Toggle dark mode"),
+                ("r", "add_record", "Add Record")]
 
     def compose(self) -> ComposeResult:
         yield Header()
         yield Footer()
 
         yield AllRecordsTree("All Records")
-
-        yield NavBar()
+        
+        with Horizontal(id="nav_bar"):
+            yield Button("Add Record", classes="nav_button", id="add_record")
+            yield Button("Two", classes="nav_button")
+            yield Button("Three", classes="nav_button")
+            yield Button("X", classes="menu_button")
+            
 
     def action_toggle_dark(self) -> None:
         self.dark = not self.dark
+
+
+    @on(Button.Pressed, "#add_record")
+    def action_add_record(self) -> None:
+        def check_add_record_one(record_one: list) -> None:
+            self.push_screen(AddRecordScreenTwo())
+
+        self.push_screen(AddRecordScreenOne(), check_add_record_one)
 
 
 if __name__ == "__main__":

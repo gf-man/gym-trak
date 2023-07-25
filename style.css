@@ -8,26 +8,52 @@ Footer {
 	height: 1;
 }
 
-NavBar {
+#nav_bar {
 	align-horizontal: center;
 	dock: bottom;
-	height: 3;
+	height: 5;
 	background: $panel;
 	offset: 0 -1;
+	padding: 1 0;
+}
+
+Input {
+	width: 1fr;
+}
+
+Grid {
+	grid-size: 2;
+	grid-rows: 1fr 4;
+	margin: 4 8;
 }
 
 AllRecordsTree {
-	margin-bottom: 1
+	margin-bottom: 1;
 }
 
-Button {
+.nav_button {
 	min-width: 7;
 	width: 1fr;
-	margin: 0 4;
+	margin: 0 2;
 	background: $primary;
 }
 
 .menu_button {
-	width: 7;
+	min-width: 5;
+	width: 5;
 	background: $secondary;
+	margin-right: 2;
 }
+
+#add_remove_buttons {
+	height: 5;
+}
+
+#record_data_inputs {
+	column-span: 2;
+}
+
+RecordDataInput {
+	height: 4;	
+}
+
