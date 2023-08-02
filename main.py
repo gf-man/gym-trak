@@ -133,33 +133,49 @@ def generate_exercise_dict():
     return ex_dict
 
 
-class AddRecordScreenOne(ModalScreen):
-    """Screen containing options for adding an exercise record"""
-
-    def compose(self) -> ComposeResult:
-        yield Grid(
-            Input(placeholder="Date (leave blank for today)"),
-            Select((ex.name, ex) for ex in exercise_list),
-            Button("Confirm", variant="success", id="confirm"),
-            Button("Cancel", variant="error", id="cancel")
-                )
-
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id == "cancel":
-            self.app.pop_screen()
-        elif event.button.id == "confirm":
-            self.dismiss([])
-
 class RecordDataInput(Horizontal):
     """Widget for inputting record data, should change depending on exercise type"""
+    exercise_type = reactive(0, layout=True)
+
     position = 0
 
     def compose(self) -> ComposeResult:
-        yield Input(placeholder="Weight")
-        yield Input(placeholder="Reps")
-        yield Input(placeholder="Sets")
+        yield Input(placeholder="Weight", id="first_input")
+        yield Input(placeholder="Reps", id="second_input")
+        yield Input(placeholder="Sets", id="third_input")
         yield Button("/\\", classes="up_down_buttons", id="up_button", disabled=True)
         yield Button("\\/", classes="up_down_buttons", id="down_button", disabled=True)
+
+    def watch_exercise_type(self) -> None:
+        if self.exercise_type == Exercise_Type["Resistance"].value:
+            try:
+                self.query_one("#third_input")
+            except:
+                self.mount(Input(placeholder="Sets", id="third_input"), before=2)
+            self.query_one("#first_input").placeholder = "Weight"
+            self.query_one("#second_input").placeholder = "Reps"
+            self.query_one("#third_input").placeholder = "Sets"
+        elif self.exercise_type == Exercise_Type["Bodyweight"].value:
+            try:
+                self.query_one("#third_input").remove()
+            except:
+                pass
+            self.query_one("#first_input").placeholder = "Reps"
+            self.query_one("#second_input").placeholder = "Sets"
+        elif self.exercise_type == Exercise_Type["Isometric"].value:
+            try:
+                self.query_one("#third_input").remove()
+            except:
+                pass
+            self.query_one("#first_input").placeholder = "Time (s)"
+            self.query_one("#second_input").placeholder = "Sets"
+        elif self.exercise_type == Exercise_Type["Distance"].value:
+            try:
+                self.query_one("#third_input").remove()
+            except:
+                pass
+            self.query_one("#first_input").placeholder = "Time (m)"
+            self.query_one("#second_input").placeholder = "Distance"
 
 def reorder_record_data_inputs(data_inputs):
     data_input_counter = 0
@@ -170,7 +186,7 @@ def reorder_record_data_inputs(data_inputs):
 
 
 
-class AddRecordScreenTwo(ModalScreen):
+class RecordEditScreen(ModalScreen):
     """Screen containing record data allowing more rows to be added, will change depending on previously selected exercise (type)"""
     number_of_added_record_data_inputs = 0
 
@@ -182,6 +198,9 @@ class AddRecordScreenTwo(ModalScreen):
 
     def compose(self) -> ComposeResult:
         with Grid():
+            #yield Input(placeholder="Date (leave blank for today)")
+            yield Input(placeholder=get_date())
+            yield Select((ex.name, ex) for ex in exercise_list)
             with ScrollableContainer(id="record_data_inputs"):
                 yield RecordDataInput()
                 with Horizontal(id="add_remove_buttons"):
@@ -189,6 +208,10 @@ class AddRecordScreenTwo(ModalScreen):
                     yield Button("Remove", variant="error" ,id="remove_record_data_input", disabled=True)
             yield Button("Confirm", variant="success", id="confirm")
             yield Button("Cancel", variant="error", id="cancel")
+
+    def on_select_changed(self, event: Select.Changed) -> None:
+        for record_data_input in self.query("RecordDataInput"):
+            record_data_input.exercise_type = event.select.value.category.value
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "cancel":
@@ -273,10 +296,7 @@ class GymTrakApp(App):
 
     @on(Button.Pressed, "#add_record")
     def action_add_record(self) -> None:
-        def check_add_record_one(record_one: list) -> None:
-            self.push_screen(AddRecordScreenTwo())
-
-        self.push_screen(AddRecordScreenOne(), check_add_record_one)
+        self.push_screen(RecordEditScreen())
 
 
 if __name__ == "__main__":

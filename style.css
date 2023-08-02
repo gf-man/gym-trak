@@ -22,9 +22,9 @@ Input {
 }
 
 Grid {
-	grid-size: 2;
-	grid-rows: 1fr 4;
-	margin: 4 8;
+	grid-size: 2 3;
+	grid-rows: 4 1fr 4;
+	margin: 2 4;
 }
 
 ScrollableContainer {
@@ -43,6 +43,8 @@ Button {
 	min-width: 4;
 	width: 4;
 }
+
+
 
 .nav_button {
 	min-width: 7;
