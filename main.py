@@ -235,7 +235,10 @@ class RecordEditScreen(ModalScreen):
         new_record_data_input = RecordDataInput()
         new_record_data_input.position = self.number_of_added_record_data_inputs
         await self.query_one("#record_data_inputs").mount(new_record_data_input, before=self.number_of_added_record_data_inputs)
-        new_record_data_input.exercise_type = self.query_one("Select").value.category.value
+        try:
+            new_record_data_input.exercise_type = self.query_one("Select").value.category.value
+        except:
+            pass
         if self.number_of_added_record_data_inputs == 1:
             self.get_widget_by_id("remove_record_data_input").disabled = False
         self.enable_disable_up_down_buttons()
