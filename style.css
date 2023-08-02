@@ -27,14 +27,26 @@ Grid {
 	margin: 4 8;
 }
 
+ScrollableContainer {
+	scrollbar-gutter: stable;
+}
+
 AllRecordsTree {
 	margin-bottom: 1;
+}
+
+Button {
+	margin: 0 2;
+}
+
+.up_down_buttons {
+	min-width: 4;
+	width: 4;
 }
 
 .nav_button {
 	min-width: 7;
 	width: 1fr;
-	margin: 0 2;
 	background: $primary;
 }
 
@@ -42,11 +54,12 @@ AllRecordsTree {
 	min-width: 5;
 	width: 5;
 	background: $secondary;
-	margin-right: 2;
+	margin: 0 2 0 0;
 }
 
 #add_remove_buttons {
 	height: 5;
+	align-horizontal: center;
 }
 
 #record_data_inputs {

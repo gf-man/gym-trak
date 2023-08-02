@@ -152,16 +152,33 @@ class AddRecordScreenOne(ModalScreen):
 
 class RecordDataInput(Horizontal):
     """Widget for inputting record data, should change depending on exercise type"""
+    position = 0
 
     def compose(self) -> ComposeResult:
         yield Input(placeholder="Weight")
         yield Input(placeholder="Reps")
         yield Input(placeholder="Sets")
+        yield Button("/\\", classes="up_down_buttons", id="up_button", disabled=True)
+        yield Button("\\/", classes="up_down_buttons", id="down_button", disabled=True)
+
+def reorder_record_data_inputs(data_inputs):
+    data_input_counter = 0
+    for data_input in data_inputs:
+        data_input.position = data_input_counter
+        data_input_counter += 1
+    return data_inputs
+
 
 
 class AddRecordScreenTwo(ModalScreen):
     """Screen containing record data allowing more rows to be added, will change depending on previously selected exercise (type)"""
     number_of_added_record_data_inputs = 0
+
+    def enable_disable_up_down_buttons(self):
+        for up_down_button in self.query(".up_down_buttons"):
+            up_down_button.disabled = False
+        self.query("RecordDataInput").first().query_one("#up_button").disabled = True
+        self.query("RecordDataInput").last().query_one("#down_button").disabled = True
 
     def compose(self) -> ComposeResult:
         with Grid():
@@ -169,7 +186,7 @@ class AddRecordScreenTwo(ModalScreen):
                 yield RecordDataInput()
                 with Horizontal(id="add_remove_buttons"):
                     yield Button("Add", variant="success", id="add_record_data_input")
-                    yield Button("Remove", variant="error" ,id="remove_record_data_input")
+                    yield Button("Remove", variant="error" ,id="remove_record_data_input", disabled=True)
             yield Button("Confirm", variant="success", id="confirm")
             yield Button("Cancel", variant="error", id="cancel")
 
@@ -178,12 +195,26 @@ class AddRecordScreenTwo(ModalScreen):
             self.app.pop_screen()
         elif event.button.id == "confirm":
             self.dismiss([])
+        elif event.button.id == "up_button":
+            move_position = event.button.parent.position - 1
+            self.query_one("#record_data_inputs").move_child(event.button.parent, before=move_position)
+            self.query_one("#record_data_inputs").displayed_children[0:-1] = reorder_record_data_inputs(self.query_one("#record_data_inputs").displayed_children[0:-1])
+            self.enable_disable_up_down_buttons()
+        elif event.button.id == "down_button":
+            move_position = event.button.parent.position + 1
+            self.query_one("#record_data_inputs").move_child(event.button.parent, after=move_position)
+            self.query_one("#record_data_inputs").displayed_children[0:-1] = reorder_record_data_inputs(self.query_one("#record_data_inputs").displayed_children[0:-1])
+            self.enable_disable_up_down_buttons()
 
     @on(Button.Pressed, "#add_record_data_input")
-    def action_add_record_data_input(self) -> None:
-        new_record_data_input = RecordDataInput()
-        self.query_one("#record_data_inputs").mount(new_record_data_input, after=self.number_of_added_record_data_inputs)
+    async def action_add_record_data_input(self) -> None:
         self.number_of_added_record_data_inputs += 1
+        new_record_data_input = RecordDataInput()
+        new_record_data_input.position = self.number_of_added_record_data_inputs
+        await self.query_one("#record_data_inputs").mount(new_record_data_input, before=self.number_of_added_record_data_inputs)
+        if self.number_of_added_record_data_inputs == 1:
+            self.get_widget_by_id("remove_record_data_input").disabled = False
+        self.enable_disable_up_down_buttons()
 
     @on(Button.Pressed, "#remove_record_data_input")
     def action_remove_record_data_input(self) -> None:
@@ -191,6 +222,9 @@ class AddRecordScreenTwo(ModalScreen):
         if record_data_inputs:
             record_data_inputs.filter("RecordDataInput").last().remove()
             self.number_of_added_record_data_inputs -= 1
+            if self.number_of_added_record_data_inputs == 0:
+                self.get_widget_by_id("remove_record_data_input").disabled = True
+        self.enable_disable_up_down_buttons()
 
 class AllRecordsTree(Tree):
     """A tree displaying all records by date allowing the user to edit records"""
