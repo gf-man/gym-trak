@@ -21,6 +21,31 @@ Input {
 	width: 1fr;
 }
 
+Input.-valid {
+	border: tall $success 60%;
+}
+
+Input.-valid:focus {
+	border: tall $success;
+}
+
+SelectCurrent {
+	border: tall $error 60%;
+}
+
+Select:focus > SelectCurrent {
+	border: tall $error;
+}
+
+SelectCurrent.-has-value {
+	border: tall $success 60%;
+}
+
+Select:focus > SelectCurrent.-has-value {
+	border: tall $success;
+}
+
+
 Grid {
 	grid-size: 2 3;
 	grid-rows: 4 1fr 4;

@@ -4,6 +4,7 @@ from textual.screen import ModalScreen
 from textual.widgets import Header, Footer, Static, Button, Tree, Select, Input
 from textual.reactive import reactive
 from textual.containers import Horizontal, Vertical, Grid, ScrollableContainer
+from textual.validation import Validator, ValidationResult, Function, Number
 
 import math
 import datetime
@@ -43,17 +44,26 @@ ex_dict_overflow_chars = ['`', '-', '=', '[', ']', ';', "'", '#', ',', '.', '/' 
 selected_section_position = []
 
 
-def get_date():
+def get_date() -> str:
     today = datetime.date.today()
     return today.strftime("%d/%m/%Y")
 
-def is_date(string_to_check):
+def is_date(string_to_check: str) -> bool:
     try:
-        datetime.datetime.strptime(string_to_check, "%d/%m/%Y")
-        return True
+        if string_to_check == "":
+            return True
+        else:
+            datetime.datetime.strptime(string_to_check, "%d/%m/%Y")
+            return True
     except ValueError:
         return False
 
+def is_integer(string_to_check:str) -> bool:
+    try:
+        int(string_to_check)
+        return True
+    except ValueError:
+        return False
 
 def load_records():
     file = open("gym.md", "r")
@@ -139,10 +149,17 @@ class RecordDataInput(Horizontal):
 
     position = 0
 
+    validator_dict = {"Weight":[Number(minimum=0.1, maximum=1000)], 
+                      "Reps":[Number(minimum=1, maximum=1000), Function(is_integer, "Not a whole number")], 
+                      "Sets":[Number(minimum=1, maximum=1000)],
+                      "Time (s)":[Number(minimum=1, maximum=60)],
+                      "Time (m)":[Number(minimum=1, maximum=60)],
+                      "Distance":[Number(minimum=1, maximum=100)]}
+
     def compose(self) -> ComposeResult:
-        yield Input(placeholder="Weight", id="first_input")
-        yield Input(placeholder="Reps", id="second_input")
-        yield Input(placeholder="Sets", id="third_input")
+        yield Input(placeholder="Weight", id="first_input", validators=self.validator_dict["Weight"])
+        yield Input(placeholder="Reps", id="second_input", validators=self.validator_dict["Reps"])
+        yield Input(placeholder="Sets", id="third_input", validators=self.validator_dict["Sets"])
         yield Button("/\\", classes="up_down_buttons", id="up_button", disabled=True)
         yield Button("\\/", classes="up_down_buttons", id="down_button", disabled=True)
 
@@ -155,6 +172,11 @@ class RecordDataInput(Horizontal):
             self.query_one("#first_input").placeholder = "Weight"
             self.query_one("#second_input").placeholder = "Reps"
             self.query_one("#third_input").placeholder = "Sets"
+
+            self.query_one("#first_input").validators = self.validator_dict["Weight"]
+            self.query_one("#second_input").validators = self.validator_dict["Reps"]
+            self.query_one("#third_input").validators = self.validator_dict["Sets"]
+
         elif self.exercise_type == Exercise_Type["Bodyweight"].value:
             try:
                 self.query_one("#third_input").remove()
@@ -162,6 +184,10 @@ class RecordDataInput(Horizontal):
                 pass
             self.query_one("#first_input").placeholder = "Reps"
             self.query_one("#second_input").placeholder = "Sets"
+
+            self.query_one("#first_input").validators = self.validator_dict["Reps"]
+            self.query_one("#second_input").validators = self.validator_dict["Sets"]
+
         elif self.exercise_type == Exercise_Type["Isometric"].value:
             try:
                 self.query_one("#third_input").remove()
@@ -169,6 +195,10 @@ class RecordDataInput(Horizontal):
                 pass
             self.query_one("#first_input").placeholder = "Time (s)"
             self.query_one("#second_input").placeholder = "Sets"
+
+            self.query_one("#first_input").validators = self.validator_dict["Time (s)"]
+            self.query_one("#second_input").validators = self.validator_dict["Sets"]
+
         elif self.exercise_type == Exercise_Type["Distance"].value:
             try:
                 self.query_one("#third_input").remove()
@@ -176,6 +206,9 @@ class RecordDataInput(Horizontal):
                 pass
             self.query_one("#first_input").placeholder = "Time (m)"
             self.query_one("#second_input").placeholder = "Distance"
+
+            self.query_one("#first_input").validators = self.validator_dict["Time (m)"]
+            self.query_one("#second_input").validators = self.validator_dict["Distance"]
 
 def reorder_record_data_inputs(data_inputs):
     data_input_counter = 0
@@ -199,8 +232,8 @@ class RecordEditScreen(ModalScreen):
     def compose(self) -> ComposeResult:
         with Grid():
             #yield Input(placeholder="Date (leave blank for today)")
-            yield Input(placeholder=get_date())
-            yield Select((ex.name, ex) for ex in exercise_list)
+            yield Input(placeholder=get_date(), validators=[Function(is_date, "Not a valid date")])
+            yield Select(((ex.name, ex) for ex in exercise_list), allow_blank=False)
             with ScrollableContainer(id="record_data_inputs"):
                 yield RecordDataInput()
                 with Horizontal(id="add_remove_buttons"):
@@ -238,7 +271,7 @@ class RecordEditScreen(ModalScreen):
         try:
             new_record_data_input.exercise_type = self.query_one("Select").value.category.value
         except:
-            pass
+            new_record_data_input.exercise_type = 1
         if self.number_of_added_record_data_inputs == 1:
             self.get_widget_by_id("remove_record_data_input").disabled = False
         self.enable_disable_up_down_buttons()
