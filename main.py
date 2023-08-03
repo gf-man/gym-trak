@@ -293,7 +293,7 @@ class AllRecordsTree(Tree):
     def on_mount(self) -> None:
         self.root.expand()
         self.show_root = False
-        for date in date_list[1:]:
+        for date in reversed(date_list[1:]):
             date_node = self.root.add(date)
             for exercise in exercise_list:
                 if date in exercise.record:
@@ -301,10 +301,8 @@ class AllRecordsTree(Tree):
                     for record in exercise.record[date]:
                         ex_record_string = 'x'.join(record)
                         ex_node.add_leaf(ex_record_string)
-#            if date == date_list[-1]:
-#                date_node.expand_all()
-
-
+            if date == date_list[-1]:
+                date_node.expand()
 
 
 
