@@ -151,7 +151,7 @@ class RecordDataInput(Horizontal):
 
     validator_dict = {"Weight":[Number(minimum=0.1, maximum=1000)], 
                       "Reps":[Number(minimum=1, maximum=1000), Function(is_integer, "Not a whole number")], 
-                      "Sets":[Number(minimum=1, maximum=1000)],
+                      "Sets":[Number(minimum=1, maximum=1000), Function(is_integer, "Not a whole number")], 
                       "Time (s)":[Number(minimum=1, maximum=60)],
                       "Time (m)":[Number(minimum=1, maximum=60)],
                       "Distance":[Number(minimum=1, maximum=100)]}
@@ -211,6 +211,7 @@ class RecordDataInput(Horizontal):
             self.query_one("#second_input").validators = self.validator_dict["Distance"]
 
 def reorder_record_data_inputs(data_inputs):
+    """Reorders RecordDataInput(s) according to their order in the list"""
     data_input_counter = 0
     for data_input in data_inputs:
         data_input.position = data_input_counter
@@ -292,15 +293,21 @@ class AllRecordsTree(Tree):
     def on_mount(self) -> None:
         self.root.expand()
         self.show_root = False
-        for date in date_list:
+        for date in date_list[1:]:
             date_node = self.root.add(date)
             for exercise in exercise_list:
                 if date in exercise.record:
-                    ex_node = date_node.add(exercise.name)
+                    ex_record_string = ""
                     record_pos = 0
                     for record in exercise.record[date]:
-                        rec_node = ex_node.add_leaf('x'.join(record), data=[date, exercise.name, record_pos])
+                        if record_pos == 0:
+                            pass
+                        else:
+                            ex_record_string += " > "
                         record_pos += 1
+                        ex_record_string += 'x'.join(record)
+                    ex_node = date_node.add(exercise.name, data=[date, exercise.name], expand=True, allow_expand=False)
+                    ex_node.add_leaf(ex_record_string)
 #            if date == date_list[-1]:
 #                date_node.expand_all()
 
