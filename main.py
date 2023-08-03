@@ -1,4 +1,5 @@
 from textual import events, on
+from textual.binding import Binding
 from textual.app import App, ComposeResult
 from textual.screen import ModalScreen
 from textual.widgets import Header, Footer, Static, Button, Tree, Select, Input
@@ -222,6 +223,8 @@ def reorder_record_data_inputs(data_inputs):
 
 class RecordEditScreen(ModalScreen):
     """Screen containing record data allowing more rows to be added, will change depending on previously selected exercise (type)"""
+    BINDINGS = [("escape", "cancel", "Cancel")]
+    
     number_of_added_record_data_inputs = 0
 
     def enable_disable_up_down_buttons(self):
@@ -242,17 +245,14 @@ class RecordEditScreen(ModalScreen):
                     yield Button("Remove", variant="error" ,id="remove_record_data_input", disabled=True)
             yield Button("Confirm", variant="success", id="confirm")
             yield Button("Cancel", variant="error", id="cancel")
+        yield Footer()
 
     def on_select_changed(self, event: Select.Changed) -> None:
         for record_data_input in self.query("RecordDataInput"):
             record_data_input.exercise_type = event.select.value.category.value
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id == "cancel":
-            self.app.pop_screen()
-        elif event.button.id == "confirm":
-            self.dismiss([])
-        elif event.button.id == "up_button":
+        if event.button.id == "up_button":
             move_position = event.button.parent.position - 1
             self.query_one("#record_data_inputs").move_child(event.button.parent, before=move_position)
             self.query_one("#record_data_inputs").displayed_children[0:-1] = reorder_record_data_inputs(self.query_one("#record_data_inputs").displayed_children[0:-1])
@@ -287,8 +287,17 @@ class RecordEditScreen(ModalScreen):
                 self.get_widget_by_id("remove_record_data_input").disabled = True
         self.enable_disable_up_down_buttons()
 
+    @on(Button.Pressed, "#cancel")
+    def action_cancel(self) -> None:
+        self.app.pop_screen()
+
+    @on(Button.Pressed, "#confirm")
+    def action_confirm(self) -> None:
+        self.dismiss([])
+
 class AllRecordsTree(Tree):
     """A tree displaying all records by date allowing the user to edit records"""
+    BINDINGS = [Binding("r", "add_record", "Add Record")]
 
     def on_mount(self) -> None:
         self.root.expand()
@@ -309,8 +318,7 @@ class AllRecordsTree(Tree):
 
 class GymTrakApp(App):
     CSS_PATH = "style.css"
-    BINDINGS = [("d", "toggle_dark", "Toggle dark mode"),
-                ("r", "add_record", "Add Record")]
+    BINDINGS = [Binding("d", "toggle_dark", "Toggle dark mode", show=False)]
 
     def compose(self) -> ComposeResult:
         yield Header()
