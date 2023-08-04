@@ -4,7 +4,7 @@ from textual.app import App, ComposeResult
 from textual.screen import ModalScreen
 from textual.widgets import Header, Footer, Static, Button, Tree, Select, Input
 from textual.reactive import reactive
-from textual.containers import Horizontal, Vertical, Grid, ScrollableContainer
+from textual.containers import Container, Horizontal, Vertical, Grid, ScrollableContainer
 from textual.validation import Validator, ValidationResult, Function, Number
 
 import math
@@ -143,6 +143,23 @@ def generate_exercise_dict():
             counter += 1
     return ex_dict
 
+class ConfirmCancelScreen(ModalScreen):
+    BINDINGS = [("escape", "cancel", "Cancel")]
+
+    def compose(self) -> ComposeResult:
+        with Grid(id="confirm_cancel_grid"):
+            yield Container(Static("Are you sure?", id="confirm_cancel_text"), classes="grid_content_container", id="confirm_cancel_text_box")
+            yield Container(Button("Confirm", variant="success", id="confirm"), classes="grid_content_container")
+            yield Container(Button("Cancel", variant="error", id="cancel"), classes="grid_content_container")
+        yield Footer()
+
+    @on(Button.Pressed, "#cancel")
+    def action_cancel(self) -> None:
+        self.app.pop_screen()
+
+    @on(Button.Pressed, "#confirm")
+    def action_confirm(self) -> None:
+        self.dismiss([])
 
 class RecordDataInput(Horizontal):
     """Widget for inputting record data, should change depending on exercise type"""
@@ -219,8 +236,6 @@ def reorder_record_data_inputs(data_inputs):
         data_input_counter += 1
     return data_inputs
 
-
-
 class RecordEditScreen(ModalScreen):
     """Screen containing record data allowing more rows to be added, will change depending on previously selected exercise (type)"""
     BINDINGS = [("escape", "cancel", "Cancel")]
@@ -234,7 +249,7 @@ class RecordEditScreen(ModalScreen):
         self.query("RecordDataInput").last().query_one("#down_button").disabled = True
 
     def compose(self) -> ComposeResult:
-        with Grid():
+        with Grid(id="record_edit_grid"):
             #yield Input(placeholder="Date (leave blank for today)")
             yield Input(placeholder=get_date(), validators=[Function(is_date, "Not a valid date")])
             yield Select(((ex.name, ex) for ex in exercise_list), allow_blank=False)
@@ -243,8 +258,8 @@ class RecordEditScreen(ModalScreen):
                 with Horizontal(id="add_remove_buttons"):
                     yield Button("Add", variant="success", id="add_record_data_input")
                     yield Button("Remove", variant="error" ,id="remove_record_data_input", disabled=True)
-            yield Button("Confirm", variant="success", id="confirm")
-            yield Button("Cancel", variant="error", id="cancel")
+            yield Container(Button("Confirm", variant="success", id="confirm"), classes="grid_content_container")
+            yield Container(Button("Cancel", variant="error", id="cancel"), classes="grid_content_container")
         yield Footer()
 
     def on_select_changed(self, event: Select.Changed) -> None:
@@ -289,7 +304,8 @@ class RecordEditScreen(ModalScreen):
 
     @on(Button.Pressed, "#cancel")
     def action_cancel(self) -> None:
-        self.app.pop_screen()
+        self.app.push_screen(ConfirmCancelScreen())
+        #self.app.pop_screen()
 
     @on(Button.Pressed, "#confirm")
     def action_confirm(self) -> None:
@@ -306,7 +322,7 @@ class AllRecordsTree(Tree):
             date_node = self.root.add(date)
             for exercise in exercise_list:
                 if date in exercise.record:
-                    ex_node = date_node.add(exercise.name, data=[date, exercise.name], expand=True, allow_expand=False)
+                    ex_node = date_node.add(exercise.name, data=[date, exercise.name], expand=True)
                     for record in exercise.record[date]:
                         ex_record_string = 'x'.join(record)
                         ex_node.add_leaf(ex_record_string)
@@ -322,7 +338,6 @@ class GymTrakApp(App):
 
     def compose(self) -> ComposeResult:
         yield Header()
-        yield Footer()
 
         yield AllRecordsTree("All Records")
         
@@ -332,6 +347,7 @@ class GymTrakApp(App):
             yield Button("Three", classes="nav_button")
             yield Button("X", classes="menu_button")
             
+        yield Footer()
 
     def action_toggle_dark(self) -> None:
         self.dark = not self.dark

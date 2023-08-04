@@ -45,11 +45,34 @@ Select:focus > SelectCurrent.-has-value {
 	border: tall $success;
 }
 
+ConfirmCancelScreen {
+	align: center middle;
+}
 
-Grid {
+#confirm_cancel_grid {
+	grid-size: 2 2;
+	height: 8;
+	max-width: 48;
+	background: $panel;
+}
+
+#confirm_cancel_text {
+	content-align-horizontal: center;
+}
+
+#confirm_cancel_text_box {
+	column-span: 2;	
+}
+
+.grid_content_container {
+	align: center middle;
+}
+
+#record_edit_grid {
 	grid-size: 2 3;
 	grid-rows: 4 1fr 4;
 	margin: 2 4;
+	padding-top: 1;
 }
 
 ScrollableContainer {
