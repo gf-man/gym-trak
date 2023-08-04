@@ -143,7 +143,7 @@ def generate_exercise_dict():
             counter += 1
     return ex_dict
 
-class ConfirmCancelScreen(ModalScreen):
+class ConfirmCancelScreen(ModalScreen[bool]):
     BINDINGS = [("escape", "cancel", "Cancel")]
 
     def compose(self) -> ComposeResult:
@@ -155,11 +155,11 @@ class ConfirmCancelScreen(ModalScreen):
 
     @on(Button.Pressed, "#cancel")
     def action_cancel(self) -> None:
-        self.app.pop_screen()
+        self.dismiss(False)
 
     @on(Button.Pressed, "#confirm")
     def action_confirm(self) -> None:
-        self.dismiss([])
+        self.dismiss(True)
 
 class RecordDataInput(Horizontal):
     """Widget for inputting record data, should change depending on exercise type"""
@@ -304,8 +304,12 @@ class RecordEditScreen(ModalScreen):
 
     @on(Button.Pressed, "#cancel")
     def action_cancel(self) -> None:
-        self.app.push_screen(ConfirmCancelScreen())
-        #self.app.pop_screen()
+
+        def check_cancel(cancel: bool) -> None:
+            if cancel:
+                self.app.pop_screen()
+
+        self.app.push_screen(ConfirmCancelScreen(), check_cancel)
 
     @on(Button.Pressed, "#confirm")
     def action_confirm(self) -> None:
