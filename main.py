@@ -1,4 +1,4 @@
-from textual import events, on
+from textual import events, on, log
 from textual.binding import Binding
 from textual.app import App, ComposeResult
 from textual.screen import ModalScreen
@@ -49,13 +49,12 @@ def get_date() -> str:
     today = datetime.date.today()
     return today.strftime("%d/%m/%Y")
 
-def is_date(string_to_check: str) -> bool:
+def is_date(string_to_check: str, accept_blank: bool = True) -> bool:
+    if string_to_check == "" and accept_blank:
+        return True
     try:
-        if string_to_check == "":
-            return True
-        else:
-            datetime.datetime.strptime(string_to_check, "%d/%m/%Y")
-            return True
+        datetime.datetime.strptime(string_to_check, "%d/%m/%Y")
+        return True
     except ValueError:
         return False
 
@@ -72,7 +71,7 @@ def load_records():
     rec_date = "01/01/2000"
     for line in file:
         line = line.rstrip('\n')
-        if is_date(line):
+        if is_date(line, False):
             rec_date = line
             records_started = True
         else:
@@ -313,6 +312,9 @@ class RecordEditScreen(ModalScreen):
 
     @on(Button.Pressed, "#confirm")
     def action_confirm(self) -> None:
+        self.log(self.query_one("Select").value)
+        self.log(self.query("RecordDataInput").last().query_one("#first_input").has_class("-valid"))
+        self.log(self.query("RecordDataInput").last().query_one("#first_input").classes)
         self.dismiss([])
 
 class AllRecordsTree(Tree):
@@ -322,7 +324,7 @@ class AllRecordsTree(Tree):
     def on_mount(self) -> None:
         self.root.expand()
         self.show_root = False
-        for date in reversed(date_list[1:]):
+        for date in reversed(date_list):
             date_node = self.root.add(date)
             for exercise in exercise_list:
                 if date in exercise.record:
