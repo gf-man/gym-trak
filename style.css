@@ -45,6 +45,24 @@ Select:focus > SelectCurrent.-has-value {
 	border: tall $success;
 }
 
+MessageScreen {
+	align: center middle;
+}
+
+#message_vertical {
+	align: center middle;
+	height: auto;
+	width: auto;
+	padding: 1 0;
+	background: $panel;
+}
+
+#message_text {
+	content-align-horizontal: center;
+	padding-bottom: 1;
+	margin: 0 1;
+}
+
 ConfirmCancelScreen {
 	align: center middle;
 }

@@ -142,6 +142,25 @@ def generate_exercise_dict():
             counter += 1
     return ex_dict
 
+class MessageScreen(ModalScreen):
+
+    message_string = ""
+
+    def __init__(self, message: str) -> None:
+        self.message_string = message
+        super().__init__()
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="message_vertical"):
+            yield Static(self.message_string, id="message_text")
+            yield Button("OK", variant="success", id="confirm")
+        yield Footer()
+
+    @on(Button.Pressed, "#confirm")
+    def action_confirm(self) -> None:
+        self.app.pop_screen()
+
+
 class ConfirmCancelScreen(ModalScreen[bool]):
     BINDINGS = [("escape", "cancel", "Cancel")]
 
@@ -167,16 +186,16 @@ class RecordDataInput(Horizontal):
     position = 0
 
     validator_dict = {"Weight":[Number(minimum=0.1, maximum=1000)], 
-                      "Reps":[Number(minimum=1, maximum=1000), Function(is_integer, "Not a whole number")], 
-                      "Sets":[Number(minimum=1, maximum=1000), Function(is_integer, "Not a whole number")], 
-                      "Time (s)":[Number(minimum=1, maximum=60)],
-                      "Time (m)":[Number(minimum=1, maximum=60)],
-                      "Distance":[Number(minimum=1, maximum=100)]}
+                      "Reps":[Number(minimum=1, maximum=1000), Function(is_integer, "Not an integer")], 
+                      "Sets":[Number(minimum=1, maximum=1000), Function(is_integer, "Not an integer")], 
+                      "Time (s)":[Number(minimum=0.001, maximum=59.999)],
+                      "Time (m)":[Number(minimum=1, maximum=59), Function(is_integer, "Not an integer")],
+                      "Distance":[Number(minimum=0.001, maximum=100)]}
 
     def compose(self) -> ComposeResult:
-        yield Input(placeholder="Weight", id="first_input", validators=self.validator_dict["Weight"])
-        yield Input(placeholder="Reps", id="second_input", validators=self.validator_dict["Reps"])
-        yield Input(placeholder="Sets", id="third_input", validators=self.validator_dict["Sets"])
+        yield Input(placeholder="Weight", id="first_input", classes="essential_input", validators=self.validator_dict["Weight"])
+        yield Input(placeholder="Reps", id="second_input", classes="essential_input", validators=self.validator_dict["Reps"])
+        yield Input(placeholder="Sets", id="third_input", classes="essential_input", validators=self.validator_dict["Sets"])
         yield Button("/\\", classes="up_down_buttons", id="up_button", disabled=True)
         yield Button("\\/", classes="up_down_buttons", id="down_button", disabled=True)
 
@@ -185,7 +204,7 @@ class RecordDataInput(Horizontal):
             try:
                 self.query_one("#third_input")
             except:
-                self.mount(Input(placeholder="Sets", id="third_input"), before=2)
+                self.mount(Input(placeholder="Sets", id="third_input"), classes="essential_input", validators=self.validator_dict["Sets"], before=2)
             self.query_one("#first_input").placeholder = "Weight"
             self.query_one("#second_input").placeholder = "Reps"
             self.query_one("#third_input").placeholder = "Sets"
@@ -235,22 +254,16 @@ def reorder_record_data_inputs(data_inputs):
         data_input_counter += 1
     return data_inputs
 
-class RecordEditScreen(ModalScreen):
+class RecordEditScreen(ModalScreen[bool]):
     """Screen containing record data allowing more rows to be added, will change depending on previously selected exercise (type)"""
     BINDINGS = [("escape", "cancel", "Cancel")]
     
     number_of_added_record_data_inputs = 0
 
-    def enable_disable_up_down_buttons(self):
-        for up_down_button in self.query(".up_down_buttons"):
-            up_down_button.disabled = False
-        self.query("RecordDataInput").first().query_one("#up_button").disabled = True
-        self.query("RecordDataInput").last().query_one("#down_button").disabled = True
-
     def compose(self) -> ComposeResult:
         with Grid(id="record_edit_grid"):
             #yield Input(placeholder="Date (leave blank for today)")
-            yield Input(placeholder=get_date(), validators=[Function(is_date, "Not a valid date")])
+            yield Input(placeholder=get_date(), id="date_input", validators=[Function(is_date, "Not a valid date")])
             yield Select(((ex.name, ex) for ex in exercise_list), allow_blank=False)
             with ScrollableContainer(id="record_data_inputs"):
                 yield RecordDataInput()
@@ -260,6 +273,12 @@ class RecordEditScreen(ModalScreen):
             yield Container(Button("Confirm", variant="success", id="confirm"), classes="grid_content_container")
             yield Container(Button("Cancel", variant="error", id="cancel"), classes="grid_content_container")
         yield Footer()
+
+    def enable_disable_up_down_buttons(self):
+        for up_down_button in self.query(".up_down_buttons"):
+            up_down_button.disabled = False
+        self.query("RecordDataInput").first().query_one("#up_button").disabled = True
+        self.query("RecordDataInput").last().query_one("#down_button").disabled = True
 
     def on_select_changed(self, event: Select.Changed) -> None:
         for record_data_input in self.query("RecordDataInput"):
@@ -306,16 +325,20 @@ class RecordEditScreen(ModalScreen):
 
         def check_cancel(cancel: bool) -> None:
             if cancel:
-                self.app.pop_screen()
+                self.dismiss(False)
 
         self.app.push_screen(ConfirmCancelScreen(), check_cancel)
 
     @on(Button.Pressed, "#confirm")
     def action_confirm(self) -> None:
-        self.log(self.query_one("Select").value)
-        self.log(self.query("RecordDataInput").last().query_one("#first_input").has_class("-valid"))
-        self.log(self.query("RecordDataInput").last().query_one("#first_input").classes)
-        self.dismiss([])
+        if self.query_one("#date_input").has_class("-invalid"):
+            self.app.push_screen(MessageScreen("Date is invalid \nLeave blank for today or enter \nDD/MM/YYYY"))
+        elif self.query_one("Select").value == None:
+            self.app.push_screen(MessageScreen("Please select an exercise"))
+        elif len(self.query(".essential_input")) != len(self.query(".-valid")):
+            self.app.push_screen(MessageScreen("Record data is incomplete"))
+        else:
+            self.dismiss(True)
 
 class AllRecordsTree(Tree):
     """A tree displaying all records by date allowing the user to edit records"""
@@ -346,13 +369,13 @@ class GymTrakApp(App):
         yield Header()
 
         yield AllRecordsTree("All Records")
-        
+
         with Horizontal(id="nav_bar"):
-            yield Button("Add Record", classes="nav_button", id="add_record")
+            yield Button("Add [u]R[/u]ecord", classes="nav_button", id="add_record")
             yield Button("Two", classes="nav_button")
             yield Button("Three", classes="nav_button")
             yield Button("X", classes="menu_button")
-            
+
         yield Footer()
 
     def action_toggle_dark(self) -> None:
