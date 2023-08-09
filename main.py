@@ -23,10 +23,13 @@ MAIN_OPTION_DICT = {"N": "New Exercise", "R": "Add Record", "V": "View Today's R
 
 
 Exercise_Type = Enum("Exercise_Type", ["Resistance", "Bodyweight", "Isometric", "Distance"])
+Exercise_Type_Units = {"Resistance": ["kg", "", ""], "Bodyweight": ["", ""], "Isometric": ["s", ""], "Distance": ["M", "km"]}
 
 MAX_EX_NAME_LENGTH = 20
 
 file = ""
+exercise_list = []
+date_list = []
 
 class Exercise:
     def __init__(self, name, category):
@@ -36,9 +39,10 @@ class Exercise:
 
     def add_record(self, record):
         self.record.update(record)
+        """To add reordering to date_list AND exercise record"""
+        if list(record.keys())[0] not in date_list:
+            date_list.append(list(record.keys())[0])
 
-exercise_list = []
-date_list = []
 
 ex_dict_overflow_chars = ['`', '-', '=', '[', ']', ';', "'", '#', ',', '.', '/' ,'!', '"', '£', '$', '%', '^', '&', '*', '(', ')', '_', '+', ':', '@', '~', '<', '>', '?']
 
@@ -204,7 +208,7 @@ class RecordDataInput(Horizontal):
             try:
                 self.query_one("#third_input")
             except:
-                self.mount(Input(placeholder="Sets", id="third_input"), classes="essential_input", validators=self.validator_dict["Sets"], before=2)
+                self.mount(Input(placeholder="Sets", id="third_input", classes="essential_input", validators=self.validator_dict["Sets"]), before=2)
             self.query_one("#first_input").placeholder = "Weight"
             self.query_one("#second_input").placeholder = "Reps"
             self.query_one("#third_input").placeholder = "Sets"
@@ -331,13 +335,33 @@ class RecordEditScreen(ModalScreen[bool]):
 
     @on(Button.Pressed, "#confirm")
     def action_confirm(self) -> None:
+
         if self.query_one("#date_input").has_class("-invalid"):
             self.app.push_screen(MessageScreen("Date is invalid \nLeave blank for today or enter \nDD/MM/YYYY"))
         elif self.query_one("Select").value == None:
             self.app.push_screen(MessageScreen("Please select an exercise"))
-        elif len(self.query(".essential_input")) != len(self.query(".-valid")):
+        elif len(self.query(".essential_input")) >= len(self.query(".-valid")):
             self.app.push_screen(MessageScreen("Record data is incomplete"))
         else:
+            rec_date = ""
+            if self.query_one("#date_input").value == "":
+                rec_date = get_date()
+            else:
+                rec_date = self.query_one("#date_input").value
+
+            new_rec = []
+            ex_type = self.query_one("Select").value.category.name
+
+            for record_data_input in self.query("RecordDataInput"):
+                row_ex_data = []
+                row_input_no = 0
+                for essential_input in record_data_input.query(".essential_input"):
+                    row_ex_data.append(essential_input.value + Exercise_Type_Units[ex_type][row_input_no])
+                    row_input_no += 1
+                new_rec.append(row_ex_data)
+
+            self.query_one("Select").value.add_record({rec_date: new_rec})
+
             self.dismiss(True)
 
 class AllRecordsTree(Tree):
@@ -384,7 +408,12 @@ class GymTrakApp(App):
 
     @on(Button.Pressed, "#add_record")
     def action_add_record(self) -> None:
-        self.push_screen(RecordEditScreen())
+        def check_updated_records(records_updated: bool) -> None:
+            if records_updated:
+                self.query_one("AllRecordsTree").remove()
+                self.mount(AllRecordsTree("All Records"), before=1)
+
+        self.push_screen(RecordEditScreen(), check_updated_records)
 
 
 if __name__ == "__main__":
