@@ -39,9 +39,13 @@ class Exercise:
 
     def add_record(self, record):
         self.record.update(record)
-        """To add reordering to date_list AND exercise record"""
+        """To add reordering to exercise record"""
+        global date_list
         if list(record.keys())[0] not in date_list:
             date_list.append(list(record.keys())[0])
+            dates = [datetime.datetime.strptime(date, "%d/%m/%Y") for date in date_list]
+            dates.sort()
+            date_list = [datetime.datetime.strftime(date, "%d/%m/%Y") for date in dates]
 
 
 ex_dict_overflow_chars = ['`', '-', '=', '[', ']', ';', "'", '#', ',', '.', '/' ,'!', '"', '£', '$', '%', '^', '&', '*', '(', ')', '_', '+', ':', '@', '~', '<', '>', '?']
