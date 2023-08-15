@@ -28,6 +28,7 @@ Exercise_Type_Units = {"Resistance": ["kg", "", ""], "Bodyweight": ["", ""], "Is
 MAX_EX_NAME_LENGTH = 20
 
 file = ""
+
 exercise_list = []
 date_list = []
 
@@ -49,8 +50,6 @@ class Exercise:
 
 
 ex_dict_overflow_chars = ['`', '-', '=', '[', ']', ';', "'", '#', ',', '.', '/' ,'!', '"', '£', '$', '%', '^', '&', '*', '(', ')', '_', '+', ':', '@', '~', '<', '>', '?']
-
-selected_section_position = []
 
 
 def get_date() -> str:
@@ -113,8 +112,8 @@ def load_records():
                 for ex in exercise_list:
                     if ex.name == ex_name:
                         ex.add_record({rec_date: ex_recs})
-                if rec_date not in date_list:
-                    date_list.append(rec_date)
+#                if rec_date not in date_list:
+#                    date_list.append(rec_date)
 
     file.close()
 
@@ -210,49 +209,49 @@ class RecordDataInput(Horizontal):
     def watch_exercise_type(self) -> None:
         if self.exercise_type == Exercise_Type["Resistance"].value:
             try:
-                self.query_one("#third_input")
+                self.query_one("#third_input", Input)
             except:
                 self.mount(Input(placeholder="Sets", id="third_input", classes="essential_input", validators=self.validator_dict["Sets"]), before=2)
-            self.query_one("#first_input").placeholder = "Weight"
-            self.query_one("#second_input").placeholder = "Reps"
-            self.query_one("#third_input").placeholder = "Sets"
+            self.query_one("#first_input", Input).placeholder = "Weight"
+            self.query_one("#second_input", Input).placeholder = "Reps"
+            self.query_one("#third_input", Input).placeholder = "Sets"
 
-            self.query_one("#first_input").validators = self.validator_dict["Weight"]
-            self.query_one("#second_input").validators = self.validator_dict["Reps"]
-            self.query_one("#third_input").validators = self.validator_dict["Sets"]
+            self.query_one("#first_input", Input).validators = self.validator_dict["Weight"]
+            self.query_one("#second_input", Input).validators = self.validator_dict["Reps"]
+            self.query_one("#third_input", Input).validators = self.validator_dict["Sets"]
 
         elif self.exercise_type == Exercise_Type["Bodyweight"].value:
             try:
-                self.query_one("#third_input").remove()
+                self.query_one("#third_input", Input).remove()
             except:
                 pass
-            self.query_one("#first_input").placeholder = "Reps"
-            self.query_one("#second_input").placeholder = "Sets"
+            self.query_one("#first_input", Input).placeholder = "Reps"
+            self.query_one("#second_input", Input).placeholder = "Sets"
 
-            self.query_one("#first_input").validators = self.validator_dict["Reps"]
-            self.query_one("#second_input").validators = self.validator_dict["Sets"]
+            self.query_one("#first_input", Input).validators = self.validator_dict["Reps"]
+            self.query_one("#second_input", Input).validators = self.validator_dict["Sets"]
 
         elif self.exercise_type == Exercise_Type["Isometric"].value:
             try:
-                self.query_one("#third_input").remove()
+                self.query_one("#third_input", Input).remove()
             except:
                 pass
-            self.query_one("#first_input").placeholder = "Time (s)"
-            self.query_one("#second_input").placeholder = "Sets"
+            self.query_one("#first_input", Input).placeholder = "Time (s)"
+            self.query_one("#second_input", Input).placeholder = "Sets"
 
-            self.query_one("#first_input").validators = self.validator_dict["Time (s)"]
-            self.query_one("#second_input").validators = self.validator_dict["Sets"]
+            self.query_one("#first_input", Input).validators = self.validator_dict["Time (s)"]
+            self.query_one("#second_input", Input).validators = self.validator_dict["Sets"]
 
         elif self.exercise_type == Exercise_Type["Distance"].value:
             try:
-                self.query_one("#third_input").remove()
+                self.query_one("#third_input", Input).remove()
             except:
                 pass
-            self.query_one("#first_input").placeholder = "Time (m)"
-            self.query_one("#second_input").placeholder = "Distance"
+            self.query_one("#first_input", Input).placeholder = "Time (m)"
+            self.query_one("#second_input", Input).placeholder = "Distance"
 
-            self.query_one("#first_input").validators = self.validator_dict["Time (m)"]
-            self.query_one("#second_input").validators = self.validator_dict["Distance"]
+            self.query_one("#first_input", Input).validators = self.validator_dict["Time (m)"]
+            self.query_one("#second_input", Input).validators = self.validator_dict["Distance"]
 
 def reorder_record_data_inputs(data_inputs):
     """Reorders RecordDataInput(s) according to their order in the list"""
@@ -283,25 +282,25 @@ class RecordEditScreen(ModalScreen[bool]):
         yield Footer()
 
     def enable_disable_up_down_buttons(self):
-        for up_down_button in self.query(".up_down_buttons"):
+        for up_down_button in self.query(".up_down_buttons").results(Button):
             up_down_button.disabled = False
         self.query("RecordDataInput").first().query_one("#up_button").disabled = True
         self.query("RecordDataInput").last().query_one("#down_button").disabled = True
 
     def on_select_changed(self, event: Select.Changed) -> None:
-        for record_data_input in self.query("RecordDataInput"):
+        for record_data_input in self.query("RecordDataInput").results(RecordDataInput):
             record_data_input.exercise_type = event.select.value.category.value
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "up_button":
             move_position = event.button.parent.position - 1
-            self.query_one("#record_data_inputs").move_child(event.button.parent, before=move_position)
-            self.query_one("#record_data_inputs").displayed_children[0:-1] = reorder_record_data_inputs(self.query_one("#record_data_inputs").displayed_children[0:-1])
+            self.query_one("#record_data_inputs", RecordDataInput).move_child(event.button.parent, before=move_position)
+            self.query_one("#record_data_inputs", RecordDataInput).displayed_children[0:-1] = reorder_record_data_inputs(self.query_one("#record_data_inputs").displayed_children[0:-1])
             self.enable_disable_up_down_buttons()
         elif event.button.id == "down_button":
             move_position = event.button.parent.position + 1
-            self.query_one("#record_data_inputs").move_child(event.button.parent, after=move_position)
-            self.query_one("#record_data_inputs").displayed_children[0:-1] = reorder_record_data_inputs(self.query_one("#record_data_inputs").displayed_children[0:-1])
+            self.query_one("#record_data_inputs", RecordDataInput).move_child(event.button.parent, after=move_position)
+            self.query_one("#record_data_inputs", RecordDataInput).displayed_children[0:-1] = reorder_record_data_inputs(self.query_one("#record_data_inputs").displayed_children[0:-1])
             self.enable_disable_up_down_buttons()
 
     @on(Button.Pressed, "#add_record_data_input")
@@ -311,7 +310,7 @@ class RecordEditScreen(ModalScreen[bool]):
         new_record_data_input.position = self.number_of_added_record_data_inputs
         await self.query_one("#record_data_inputs").mount(new_record_data_input, before=self.number_of_added_record_data_inputs)
         try:
-            new_record_data_input.exercise_type = self.query_one("Select").value.category.value
+            new_record_data_input.exercise_type = self.query_one("Select", Select).value.category.value
         except:
             new_record_data_input.exercise_type = 1
         if self.number_of_added_record_data_inputs == 1:
@@ -339,34 +338,38 @@ class RecordEditScreen(ModalScreen[bool]):
 
     @on(Button.Pressed, "#confirm")
     def action_confirm(self) -> None:
+        """Checks for input errors or record overlapping, then adds record to the exercise"""
 
         if self.query_one("#date_input").has_class("-invalid"):
             self.app.push_screen(MessageScreen("Date is invalid \nLeave blank for today or enter \nDD/MM/YYYY"))
-        elif self.query_one("Select").value == None:
+        elif self.query_one("Select", Select).value is None:
             self.app.push_screen(MessageScreen("Please select an exercise"))
-        elif len(self.query(".essential_input")) >= len(self.query(".-valid")):
+        elif len(self.query(".essential_input")) > len(self.query(".-valid").exclude("#date_input")):
             self.app.push_screen(MessageScreen("Record data is incomplete"))
         else:
             rec_date = ""
-            if self.query_one("#date_input").value == "":
+            if self.query_one("#date_input", Input).value == "":
                 rec_date = get_date()
             else:
-                rec_date = self.query_one("#date_input").value
+                rec_date = self.query_one("#date_input", Input).value
 
-            new_rec = []
-            ex_type = self.query_one("Select").value.category.name
+            if rec_date in self.query_one("Select", Select).value.record:
+                self.app.push_screen(MessageScreen("There is already an exercise record for that date.\nEdit that day's exercise record"))
+            else:
+                new_rec = []
+                ex_type = self.query_one("Select", Select).value.category.name
 
-            for record_data_input in self.query("RecordDataInput"):
-                row_ex_data = []
-                row_input_no = 0
-                for essential_input in record_data_input.query(".essential_input"):
-                    row_ex_data.append(essential_input.value + Exercise_Type_Units[ex_type][row_input_no])
-                    row_input_no += 1
-                new_rec.append(row_ex_data)
+                for record_data_input in self.query("RecordDataInput").results(RecordDataInput):
+                    row_ex_data = []
+                    row_input_no = 0
+                    for essential_input in record_data_input.query(".essential_input").results(Input):
+                        row_ex_data.append(essential_input.value + Exercise_Type_Units[ex_type][row_input_no])
+                        row_input_no += 1
+                    new_rec.append(row_ex_data)
 
-            self.query_one("Select").value.add_record({rec_date: new_rec})
+                self.query_one("Select", Select).value.add_record({rec_date: new_rec})
 
-            self.dismiss(True)
+                self.dismiss(True)
 
 class AllRecordsTree(Tree):
     """A tree displaying all records by date allowing the user to edit records"""
