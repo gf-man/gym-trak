@@ -27,10 +27,9 @@ Exercise_Type_Units = {"Resistance": ["kg", "", ""], "Bodyweight": ["", ""], "Is
 
 MAX_EX_NAME_LENGTH = 20
 
-file = ""
+file: str = ""
 
-exercise_list = []
-date_list = []
+date_list: list[str] = []
 
 class Exercise:
     def __init__(self, name, category):
@@ -39,8 +38,8 @@ class Exercise:
         self.record = {}
 
     def add_record(self, record):
-        self.record.update(record)
         """To add reordering to exercise record"""
+        self.record.update(record)
         global date_list
         if list(record.keys())[0] not in date_list:
             date_list.append(list(record.keys())[0])
@@ -48,6 +47,7 @@ class Exercise:
             dates.sort()
             date_list = [datetime.datetime.strftime(date, "%d/%m/%Y") for date in dates]
 
+exercise_list: list[Exercise] = []
 
 ex_dict_overflow_chars = ['`', '-', '=', '[', ']', ';', "'", '#', ',', '.', '/' ,'!', '"', '£', '$', '%', '^', '&', '*', '(', ')', '_', '+', ':', '@', '~', '<', '>', '?']
 
@@ -192,7 +192,7 @@ class RecordDataInput(Horizontal):
 
     position = 0
 
-    validator_dict = {"Weight":[Number(minimum=0.1, maximum=1000)], 
+    validator_dict: dict[str, list[Validator]] = {"Weight":[Number(minimum=0.1, maximum=1000)],
                       "Reps":[Number(minimum=1, maximum=1000), Function(is_integer, "Not an integer")], 
                       "Sets":[Number(minimum=1, maximum=1000), Function(is_integer, "Not an integer")], 
                       "Time (s)":[Number(minimum=0.001, maximum=59.999)],
@@ -264,7 +264,7 @@ def reorder_record_data_inputs(data_inputs):
 class RecordEditScreen(ModalScreen[bool]):
     """Screen containing record data allowing more rows to be added, will change depending on previously selected exercise (type)"""
     BINDINGS = [("escape", "cancel", "Cancel")]
-    
+
     number_of_added_record_data_inputs = 0
 
     def compose(self) -> ComposeResult:
