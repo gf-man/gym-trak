@@ -45,6 +45,15 @@ Select:focus > SelectCurrent.-has-value {
 	border: tall $success;
 }
 
+SelectOverlay {
+	height: auto;
+	max-height: 20;
+}
+
+#exercise_type_select > SelectOverlay {
+	height: 6;
+}
+
 ModalScreen {
 	align: center middle;
 }

@@ -211,7 +211,7 @@ class ExerciseEditScreen(ModalScreen[bool]):
     def compose(self) -> ComposeResult:
         with Grid(id="exercise_edit_grid"):
             yield Input(placeholder="Name", id="name_input", validators=[Length(minimum=1, maximum=MAX_EX_NAME_LENGTH), Function(is_valid_exercise_name, "Not a valid exercise name")])
-            yield Select(((ex_type.name, ex_type.value) for ex_type in Exercise_Type), allow_blank=False)
+            yield Select(((ex_type.name, ex_type.value) for ex_type in Exercise_Type), allow_blank=False, id="exercise_type_select")
             yield Container(Button("Confirm", variant="success", id="confirm"), classes="grid_content_container")
             yield Container(Button("Cancel", variant="error", id="cancel"), classes="grid_content_container")
         yield Footer()
