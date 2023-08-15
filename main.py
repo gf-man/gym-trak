@@ -465,7 +465,7 @@ class GymTrakApp(App):
             yield Button("Add [u]R[/u]ecord", classes="nav_button", id="add_record")
             yield Button("[u]N[/u]ew Exercise", classes="nav_button", id="new_exercise")
             yield Button("Three", classes="nav_button")
-            yield Button("X", classes="menu_button")
+            yield Button("", classes="menu_button")
 
         yield Footer()
 
@@ -490,7 +490,6 @@ class GymTrakApp(App):
                 pass
 
         self.push_screen(ExerciseEditScreen(), check_updated_exercises)
-
 
 if __name__ == "__main__":
     load_records()
