@@ -45,7 +45,7 @@ Select:focus > SelectCurrent.-has-value {
 	border: tall $success;
 }
 
-MessageScreen {
+ModalScreen {
 	align: center middle;
 }
 
@@ -61,10 +61,6 @@ MessageScreen {
 	content-align-horizontal: center;
 	padding-bottom: 1;
 	margin: 0 1;
-}
-
-ConfirmCancelScreen {
-	align: center middle;
 }
 
 #confirm_cancel_grid {
@@ -84,6 +80,14 @@ ConfirmCancelScreen {
 
 .grid_content_container {
 	align: center middle;
+}
+
+#exercise_edit_grid {
+	grid-size: 2 2;
+	grid-rows: 4 4;
+	height: 9;
+	margin: 0 4;
+	padding-top: 1;
 }
 
 #record_edit_grid {

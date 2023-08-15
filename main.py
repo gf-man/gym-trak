@@ -1,3 +1,9 @@
+import math
+import datetime
+from enum import Enum
+
+
+
 from textual import events, on, log
 from textual.binding import Binding
 from textual.app import App, ComposeResult
@@ -5,11 +11,8 @@ from textual.screen import ModalScreen
 from textual.widgets import Header, Footer, Static, Button, Tree, Select, Input
 from textual.reactive import reactive
 from textual.containers import Container, Horizontal, Vertical, Grid, ScrollableContainer
-from textual.validation import Validator, ValidationResult, Function, Number
+from textual.validation import Validator, ValidationResult, Function, Number, Length
 
-import math
-import datetime
-from enum import Enum
 
 HELP_LIST = ["Press TAB to switch between the display window and the options window","",
              "Move up and down in the options menu or display windows with the arrow keys","",
@@ -71,6 +74,13 @@ def is_integer(string_to_check:str) -> bool:
         return True
     except ValueError:
         return False
+
+def is_valid_exercise_name(string_to_check: str) -> bool:
+    if ":" in string_to_check:
+        return False
+    if string_to_check.isspace():
+        return False
+    return True
 
 def load_records():
     file = open("gym.md", "r")
@@ -171,9 +181,16 @@ class MessageScreen(ModalScreen):
 class ConfirmCancelScreen(ModalScreen[bool]):
     BINDINGS = [("escape", "cancel", "Cancel")]
 
+    message_string = ""
+
+    def __init__(self, message: str = "Are you sure?") -> None:
+        self.message_string = message
+        super().__init__()
+
     def compose(self) -> ComposeResult:
+        #TODO Change to vertical to support auto height if longer than 1 line messages are required
         with Grid(id="confirm_cancel_grid"):
-            yield Container(Static("Are you sure?", id="confirm_cancel_text"), classes="grid_content_container", id="confirm_cancel_text_box")
+            yield Container(Static(self.message_string, id="confirm_cancel_text"), classes="grid_content_container", id="confirm_cancel_text_box")
             yield Container(Button("Confirm", variant="success", id="confirm"), classes="grid_content_container")
             yield Container(Button("Cancel", variant="error", id="cancel"), classes="grid_content_container")
         yield Footer()
@@ -185,6 +202,43 @@ class ConfirmCancelScreen(ModalScreen[bool]):
     @on(Button.Pressed, "#confirm")
     def action_confirm(self) -> None:
         self.dismiss(True)
+
+
+class ExerciseEditScreen(ModalScreen[bool]):
+    """Screen containing record name and type allowing user to create or edit exercises"""
+    BINDINGS = [("escape", "cancel", "Cancel")]
+
+    def compose(self) -> ComposeResult:
+        with Grid(id="exercise_edit_grid"):
+            yield Input(placeholder="Name", id="name_input", validators=[Length(minimum=1, maximum=MAX_EX_NAME_LENGTH), Function(is_valid_exercise_name, "Not a valid exercise name")])
+            yield Select(((ex_type.name, ex_type.value) for ex_type in Exercise_Type), allow_blank=False)
+            yield Container(Button("Confirm", variant="success", id="confirm"), classes="grid_content_container")
+            yield Container(Button("Cancel", variant="error", id="cancel"), classes="grid_content_container")
+        yield Footer()
+
+    @on(Button.Pressed, "#cancel")
+    def action_cancel(self) -> None:
+        def check_cancel(cancel: bool) -> None:
+            if cancel:
+                self.dismiss(False)
+
+        self.app.push_screen(ConfirmCancelScreen(), check_cancel)
+
+    @on(Button.Pressed, "#confirm")
+    def action_confirm(self) -> None:
+        if self.query_one("#name_input", Input).has_class("-invalid"):
+            self.app.push_screen(MessageScreen("Name is invalid\nMust not contain :"))
+        elif self.query_one("Select", Select).value is None:
+            self.app.push_screen(MessageScreen("Please select an exercise type"))
+        elif self.query_one("#name_input", Input).value in exercise_list:
+            #TODO For changing existing exercise to match another - should ask for confirmation to merge existing exercise records
+            pass
+        else:
+            exercise_list.append(Exercise(self.query_one("#name_input", Input).value, self.query_one("Select", Select).value))
+
+            self.dismiss(True)
+
+
 
 class RecordDataInput(Horizontal):
     """Widget for inputting record data, should change depending on exercise type"""
@@ -329,7 +383,6 @@ class RecordEditScreen(ModalScreen[bool]):
 
     @on(Button.Pressed, "#cancel")
     def action_cancel(self) -> None:
-
         def check_cancel(cancel: bool) -> None:
             if cancel:
                 self.dismiss(False)
@@ -340,7 +393,7 @@ class RecordEditScreen(ModalScreen[bool]):
     def action_confirm(self) -> None:
         """Checks for input errors or record overlapping, then adds record to the exercise"""
 
-        if self.query_one("#date_input").has_class("-invalid"):
+        if self.query_one("#date_input", Input).has_class("-invalid"):
             self.app.push_screen(MessageScreen("Date is invalid \nLeave blank for today or enter \nDD/MM/YYYY"))
         elif self.query_one("Select", Select).value is None:
             self.app.push_screen(MessageScreen("Please select an exercise"))
@@ -373,7 +426,8 @@ class RecordEditScreen(ModalScreen[bool]):
 
 class AllRecordsTree(Tree):
     """A tree displaying all records by date allowing the user to edit records"""
-    BINDINGS = [Binding("r", "add_record", "Add Record")]
+    BINDINGS = [Binding("r", "add_record", "Add Record"),
+                Binding("n", "new_exercise", "New Exercise")]
 
     def on_mount(self) -> None:
         self.root.expand()
@@ -403,7 +457,7 @@ class GymTrakApp(App):
 
         with Horizontal(id="nav_bar"):
             yield Button("Add [u]R[/u]ecord", classes="nav_button", id="add_record")
-            yield Button("Two", classes="nav_button")
+            yield Button("[u]N[/u]ew Exercise", classes="nav_button", id="new_exercise")
             yield Button("Three", classes="nav_button")
             yield Button("X", classes="menu_button")
 
@@ -411,6 +465,7 @@ class GymTrakApp(App):
 
     def action_toggle_dark(self) -> None:
         self.dark = not self.dark
+
 
 
     @on(Button.Pressed, "#add_record")
@@ -421,6 +476,14 @@ class GymTrakApp(App):
                 self.mount(AllRecordsTree("All Records"), before=1)
 
         self.push_screen(RecordEditScreen(), check_updated_records)
+
+    @on(Button.Pressed, "#new_exercise")
+    def action_new_exercise(self) -> None:
+        def check_updated_exercises(exercises_updated: bool) -> None:
+            if exercises_updated:
+                pass
+
+        self.push_screen(ExerciseEditScreen(), check_updated_exercises)
 
 
 if __name__ == "__main__":
