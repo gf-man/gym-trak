@@ -226,6 +226,11 @@ class ExerciseEditScreen(ModalScreen[bool]):
 
     @on(Button.Pressed, "#confirm")
     def action_confirm(self) -> None:
+        def check_confirm(confirm: bool) -> None:
+            if confirm:
+                exercise_list.append(Exercise(self.query_one("#name_input", Input).value, self.query_one("Select", Select).value))
+                self.dismiss(True)
+
         if self.query_one("#name_input", Input).has_class("-invalid"):
             self.app.push_screen(MessageScreen("Name is invalid\nMust not contain :"))
         elif self.query_one("Select", Select).value is None:
@@ -234,9 +239,7 @@ class ExerciseEditScreen(ModalScreen[bool]):
             #TODO For changing existing exercise to match another - should ask for confirmation to merge existing exercise records
             pass
         else:
-            exercise_list.append(Exercise(self.query_one("#name_input", Input).value, self.query_one("Select", Select).value))
-
-            self.dismiss(True)
+            self.app.push_screen(ConfirmCancelScreen(), check_confirm)
 
 
 
@@ -392,23 +395,8 @@ class RecordEditScreen(ModalScreen[bool]):
     @on(Button.Pressed, "#confirm")
     def action_confirm(self) -> None:
         """Checks for input errors or record overlapping, then adds record to the exercise"""
-
-        if self.query_one("#date_input", Input).has_class("-invalid"):
-            self.app.push_screen(MessageScreen("Date is invalid \nLeave blank for today or enter \nDD/MM/YYYY"))
-        elif self.query_one("Select", Select).value is None:
-            self.app.push_screen(MessageScreen("Please select an exercise"))
-        elif len(self.query(".essential_input")) > len(self.query(".-valid").exclude("#date_input")):
-            self.app.push_screen(MessageScreen("Record data is incomplete"))
-        else:
-            rec_date = ""
-            if self.query_one("#date_input", Input).value == "":
-                rec_date = get_date()
-            else:
-                rec_date = self.query_one("#date_input", Input).value
-
-            if rec_date in self.query_one("Select", Select).value.record:
-                self.app.push_screen(MessageScreen("There is already an exercise record for that date.\nEdit that day's exercise record"))
-            else:
+        def check_confirm(confirm: bool) -> None:
+            if confirm:
                 new_rec = []
                 ex_type = self.query_one("Select", Select).value.category.name
 
@@ -423,6 +411,24 @@ class RecordEditScreen(ModalScreen[bool]):
                 self.query_one("Select", Select).value.add_record({rec_date: new_rec})
 
                 self.dismiss(True)
+
+        if self.query_one("#date_input", Input).has_class("-invalid"):
+            self.app.push_screen(MessageScreen("Date is invalid \nLeave blank for today or enter \nDD/MM/YYYY"))
+        elif self.query_one("Select", Select).value is None:
+            self.app.push_screen(MessageScreen("Please select an exercise"))
+        elif len(self.query(".essential_input")) > len(self.query(".-valid").exclude("#date_input")):
+            self.app.push_screen(MessageScreen("Record data is incomplete"))
+        else:
+            rec_date = "" #No idea why or how this is carried to check_confirm function
+            if self.query_one("#date_input", Input).value == "":
+                rec_date = get_date()
+            else:
+                rec_date = self.query_one("#date_input", Input).value
+
+            if rec_date in self.query_one("Select", Select).value.record:
+                self.app.push_screen(MessageScreen("There is already an exercise record for that date.\nEdit that day's exercise record"))
+            else:
+                self.app.push_screen(ConfirmCancelScreen(), check_confirm)
 
 class AllRecordsTree(Tree):
     """A tree displaying all records by date allowing the user to edit records"""
