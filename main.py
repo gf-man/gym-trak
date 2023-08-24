@@ -351,13 +351,13 @@ class RecordEditScreen(ModalScreen[bool]):
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "up_button":
             move_position = event.button.parent.position - 1
-            self.query_one("#record_data_inputs", RecordDataInput).move_child(event.button.parent, before=move_position)
-            self.query_one("#record_data_inputs", RecordDataInput).displayed_children[0:-1] = reorder_record_data_inputs(self.query_one("#record_data_inputs").displayed_children[0:-1])
+            self.query_one("#record_data_inputs", ScrollableContainer).move_child(event.button.parent, before=move_position)
+            self.query_one("#record_data_inputs", ScrollableContainer).displayed_children[0:-1] = reorder_record_data_inputs(self.query_one("#record_data_inputs").displayed_children[0:-1])
             self.enable_disable_up_down_buttons()
         elif event.button.id == "down_button":
             move_position = event.button.parent.position + 1
-            self.query_one("#record_data_inputs", RecordDataInput).move_child(event.button.parent, after=move_position)
-            self.query_one("#record_data_inputs", RecordDataInput).displayed_children[0:-1] = reorder_record_data_inputs(self.query_one("#record_data_inputs").displayed_children[0:-1])
+            self.query_one("#record_data_inputs", ScrollableContainer).move_child(event.button.parent, after=move_position)
+            self.query_one("#record_data_inputs", ScrollableContainer).displayed_children[0:-1] = reorder_record_data_inputs(self.query_one("#record_data_inputs").displayed_children[0:-1])
             self.enable_disable_up_down_buttons()
 
     @on(Button.Pressed, "#add_record_data_input")
