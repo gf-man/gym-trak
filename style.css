@@ -75,7 +75,7 @@ ModalScreen {
 #confirm_cancel_grid {
 	grid-size: 2 2;
 	height: 8;
-	max-width: 48;
+	width: 40;
 	background: $panel;
 }
 
@@ -94,9 +94,11 @@ ModalScreen {
 #exercise_edit_grid {
 	grid-size: 2 2;
 	grid-rows: 4 4;
-	height: 9;
+	grid-gutter: 1 0;
+	height: 10;
 	margin: 0 4;
 	padding-top: 1;
+	background: $panel;
 }
 
 #record_edit_grid {
@@ -104,10 +106,11 @@ ModalScreen {
 	grid-rows: 4 1fr 4;
 	margin: 2 4;
 	padding-top: 1;
+	background: $panel;
 }
 
 ScrollableContainer {
-	scrollbar-gutter: stable;
+	scrollbar-gutter: auto;
 }
 
 AllRecordsTree {
