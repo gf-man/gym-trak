@@ -257,7 +257,7 @@ class RecordDataInput(Horizontal):
                       "Distance":[Number(minimum=0.001, maximum=100)]}
 
     def compose(self) -> ComposeResult:
-        yield Input(placeholder="Weight", id="first_input", classes="essential_input", validators=self.validator_dict["Weight"])
+        yield Input(placeholder="Weight (kg)", id="first_input", classes="essential_input", validators=self.validator_dict["Weight"])
         yield Input(placeholder="Reps", id="second_input", classes="essential_input", validators=self.validator_dict["Reps"])
         yield Input(placeholder="Sets", id="third_input", classes="essential_input", validators=self.validator_dict["Sets"])
         yield Button("/\\", classes="up_down_buttons", id="up_button", disabled=True)
@@ -269,7 +269,7 @@ class RecordDataInput(Horizontal):
                 self.query_one("#third_input", Input)
             except:
                 self.mount(Input(placeholder="Sets", id="third_input", classes="essential_input", validators=self.validator_dict["Sets"]), before=2)
-            self.query_one("#first_input", Input).placeholder = "Weight"
+            self.query_one("#first_input", Input).placeholder = "Weight (kg)"
             self.query_one("#second_input", Input).placeholder = "Reps"
             self.query_one("#third_input", Input).placeholder = "Sets"
 
@@ -305,7 +305,7 @@ class RecordDataInput(Horizontal):
             except:
                 pass
             self.query_one("#first_input", Input).placeholder = "Time (m)"
-            self.query_one("#second_input", Input).placeholder = "Distance"
+            self.query_one("#second_input", Input).placeholder = "Distance (km)"
 
             self.query_one("#first_input", Input).validators = self.validator_dict["Time (m)"]
             self.query_one("#second_input", Input).validators = self.validator_dict["Distance"]
@@ -328,7 +328,7 @@ class RecordEditScreen(ModalScreen[bool]):
         with Grid(id="record_edit_grid"):
             #yield Input(placeholder="Date (leave blank for today)")
             yield Input(placeholder=get_date(), id="date_input", validators=[Function(is_date, "Not a valid date")])
-            yield Select(((ex.name, ex) for ex in exercise_list), allow_blank=False)
+            yield Select(((ex.name, ex) for ex in exercise_list), allow_blank=True)
             with ScrollableContainer(id="record_data_inputs"):
                 yield RecordDataInput()
                 with Horizontal(id="add_remove_buttons"):
